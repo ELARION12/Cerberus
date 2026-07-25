@@ -6,7 +6,7 @@
   <a href="https://isocpp.org/"><img src="https://img.shields.io/badge/C%2B%2B-17%2F20-00599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="C++"></a>
   <a href="https://en.wikipedia.org/wiki/C11_(C_standard_revision)"><img src="https://img.shields.io/badge/C-11-282C34.svg?style=for-the-badge&logo=c&logoColor=white" alt="C"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Version-1.2.0-orange.svg?style=for-the-badge" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Latest_Build-v1.2.0-brightgreen.svg?style=for-the-badge" alt="Latest Build"></a>
   <br />
   <br />
 </div>
