@@ -18,6 +18,10 @@
 
 ## ⚡ Core Performance Snapshot (V1.2.0)
 
+<div align="center">
+  <img src="bench.gif" alt="IronAgent Benchmark vs LangChain" width="100%"/>
+</div>
+
 | Metric | **IronAgent V1.2.0** | **LangChain / Heavy Frameworks** | **Performance Delta** |
 |---|---|---|---|
 | **Hot-Loop Throughput** | **272,487 iterations/sec** | ~2,500 – 5,000 iterations/sec | **~50× to 100× Faster** |
