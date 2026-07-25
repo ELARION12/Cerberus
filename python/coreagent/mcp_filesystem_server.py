@@ -1,10 +1,6 @@
 """
-mcp_filesystem_server.py - A minimal, pure-Python MCP server exposing
-filesystem tools, scoped to a single root directory.
-
-Runs over stdio, launched as a subprocess by mcp_client.py. This
-replaces the official Node.js reference filesystem server so
-CoreAgent's stack stays pure C + C++ + Python - no JavaScript.
+Minimal pure-Python MCP server exposing filesystem tools,
+scoped to a single root directory. Runs over stdio.
 """
 
 import os
@@ -13,8 +9,6 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-# Root directory this server is allowed to touch - passed as argv[1],
-# defaults to the current working directory if not given.
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path.cwd()
 
 mcp = FastMCP("CoreAgent Filesystem Server")

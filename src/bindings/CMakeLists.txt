@@ -17,6 +17,7 @@ target_include_directories(_coreagent_cpp PRIVATE
     ${CMAKE_SOURCE_DIR}/src/cpp_engine/tools
     ${CMAKE_SOURCE_DIR}/src/cpp_engine/memory
     ${CMAKE_SOURCE_DIR}/src/cpp_engine/core
+    ${CMAKE_SOURCE_DIR}/src/cpp_engine/parser
     ${CMAKE_SOURCE_DIR}/src/c_core/memory
     ${CMAKE_SOURCE_DIR}/src/c_core/threading
     ${CMAKE_SOURCE_DIR}/src/c_core/executor

@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus          /* ← ADD THIS BLOCK */
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -31,7 +31,7 @@ void              ca_pool_wait(ca_thread_pool_t* pool);
 uint64_t          ca_pool_tasks_completed(const ca_thread_pool_t* pool);
 uint32_t          ca_pool_active_threads(const ca_thread_pool_t* pool);
 
-#ifdef __cplusplus          /* ← ADD THIS BLOCK */
+#ifdef __cplusplus
 }
 #endif
 

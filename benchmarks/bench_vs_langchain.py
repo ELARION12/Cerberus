@@ -1,26 +1,32 @@
 # benchmarks/bench_vs_langchain.py
+import os
 import sys
 import time
 import resource
 import gc
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../python"))
 
 def get_memory_mb():
     # RUSAGE_SELF returns kilobytes on Linux
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
 
 def measure_coreagent():
-    print("=== CoreAgent Orchestration (Isolated) ===")
+    print("=== CoreAgent Orchestration (Isolated) ===", flush=True)
+    time.sleep(1.5)  # Pause for GIF recording
+
     gc.collect()
     mem_start = get_memory_mb()
+    
+    # --- START BENCHMARK TIMER ---
     start_time = time.perf_counter()
 
     from coreagent.agent import Agent
     from coreagent._coreagent_cpp import AgentConfig
 
-    # 1. Shrink the C++ arena sizes down to 1MB to destroy the 50MB baseline RSS
     config = AgentConfig()
-    config.context_arena_capacity = 1024 * 1024    # 1 MB
-    config.context_scratch_capacity = 1024 * 1024  # 1 MB
+    config.context_arena_capacity = 1024 * 1024    
+    config.context_scratch_capacity = 1024 * 1024  
     
     agent = Agent(config=config)
     agent.context.add_system("You are a high-performance bare-metal orchestrated agent.")
@@ -29,28 +35,37 @@ def measure_coreagent():
         agent.context.add_user(f"Data payload {i}: " + "x" * 150)
         agent.context.add_assistant(f"Processed payload {i}.")
 
-    # Decode the new zero-copy memoryview returned by the C++ engine
     prompt_view = agent.context.build_prompt()
     prompt = bytes(prompt_view).decode('utf-8')
 
     end_time = time.perf_counter()
+    # --- END BENCHMARK TIMER ---
     
-    # 2. Force Python to GC the memoryview objects before calculating final RSS
     gc.collect()
     mem_end = get_memory_mb()
 
-    print(f"Time-to-Ready (TTFA) : {(end_time - start_time) * 1000:.3f} ms")
-    print(f"Memory Footprint (RSS): {mem_end - mem_start:.2f} MB")
-    print(f"Final Prompt Output   : {len(prompt)} bytes")
-    print("==========================================\n")
+    print(f"Time-to-Ready (TTFA) : {(end_time - start_time) * 1000:.3f} ms", flush=True)
+    print(f"Memory Footprint (RSS): {mem_end - mem_start:.2f} MB", flush=True)
+    print(f"Final Prompt Output   : {len(prompt)} bytes", flush=True)
+    print("==========================================\n", flush=True)
+    
+    time.sleep(2.0)  # Pause to let the viewer digest CoreAgent's score
 
 def measure_langchain():
-    print("=== LangChain Orchestration (Isolated) ===")
+    print("=== LangChain Orchestration (Isolated) ===", flush=True)
+    time.sleep(1.5)  # Pause for GIF recording
+
     gc.collect()
     mem_start = get_memory_mb()
+    
+    # --- START BENCHMARK TIMER ---
     start_time = time.perf_counter()
 
-    from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+    try:
+        from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+    except ImportError:
+        print("[LangChain is not installed in the environment. Skipping LangChain benchmark.]\n", flush=True)
+        return
 
     messages = [SystemMessage(content="You are a high-performance bare-metal orchestrated agent.")]
 
@@ -66,14 +81,17 @@ def measure_langchain():
     prompt = "\n".join([f"[{m.type.upper()}]: {m.content}" for m in messages])
 
     end_time = time.perf_counter()
+    # --- END BENCHMARK TIMER ---
     
     gc.collect()
     mem_end = get_memory_mb()
 
-    print(f"Time-to-Ready (TTFA) : {(end_time - start_time) * 1000:.3f} ms")
-    print(f"Memory Footprint (RSS): {mem_end - mem_start:.2f} MB")
-    print(f"Final Prompt Output   : {len(prompt)} bytes")
-    print("==========================================\n")
+    print(f"Time-to-Ready (TTFA) : {(end_time - start_time) * 1000:.3f} ms", flush=True)
+    print(f"Memory Footprint (RSS): {mem_end - mem_start:.2f} MB", flush=True)
+    print(f"Final Prompt Output   : {len(prompt)} bytes", flush=True)
+    print("==========================================\n", flush=True)
+    
+    time.sleep(3.0)  # Hold final output before loop repeats
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:

@@ -1,9 +1,5 @@
 """
-python/coreagent/tools.py
-
 Built-in Python-side tools for CoreAgent.
-These register themselves with the C++ ToolRegistry
-via Python callables passed through pybind11.
 """
 
 import subprocess
@@ -15,7 +11,6 @@ from typing import Optional
 try:
     from ._coreagent_cpp import ToolInput, ToolOutput
 except ImportError:
-    # Fallback for IDE type hints when .so not built yet
     class ToolInput:
         name: str
         args: str

@@ -1,9 +1,3 @@
-"""
-python/coreagent/agent.py
-
-High-level Python Agent wrapper.
-Wraps the C++ Agent with a Pythonic API.
-"""
 from __future__ import annotations
 import os
 import json
@@ -85,22 +79,20 @@ class Agent:
             config.num_threads    = num_threads
             config.max_steps      = max_steps
             config.tool_timeout   = tool_timeout
-            # Permanently default to 1MB to prevent the 50MB baseline RSS
             config.context_arena_capacity = 1024 * 1024
             config.context_scratch_capacity = 1024 * 1024
         else:
             config.name = name
 
         self._agent = _CppAgent(config)
-        self._llm   = None  # Lazily instantiated via self.llm property
-        self._tool_specs = dict(self.TOOL_SPECS)  # grows as MCP tools register
+        self._llm   = None           # LLM client is loaded lazily on first use
+        self._tool_specs = dict(self.TOOL_SPECS)  # grows as MCP tools are added
         self._mcp_bridges: List[Any] = []
-        self.inbox: List[AgentMessage] = []  # incoming agent-to-agent messages
-        self.workers: Dict[str, "Agent"] = {}       # name -> worker Agent
-        self.worker_roles: Dict[str, str] = {}       # name -> role description
-        self.memory: Optional[Any] = None   # shared team blackboard
+        self.inbox: List[AgentMessage] = []       # agent-to-agent message queue
+        self.workers: Dict[str, "Agent"] = {}     # name -> subordinate agent
+        self.worker_roles: Dict[str, str] = {}    # name -> role description (shown to LLM)
+        self.memory: Optional[Any] = None         # shared team blackboard, if joined
 
-        # Load built-in Python tools 
         if load_defaults:
             self._register_defaults()
 
@@ -154,7 +146,6 @@ class Agent:
         self._agent.register_tool(name, description, fn)
         return self
 
-    # ── Phase 6a: agent-to-agent messaging ─────────────────
     def send_message(self, to_agent: "Agent", content: str) -> None:
         """
         Send a message to another Agent's inbox. Also records the
@@ -183,10 +174,11 @@ class Agent:
             self.inbox.clear()
         return msgs
 
-    # ── Phase 6c: shared memory between agents ─────────────
     def join_team(self, shared_memory: SharedMemory) -> "Agent":
         """Attach this agent to a shared team blackboard."""
         self.memory = shared_memory
+        if hasattr(self._agent, "set_shared_memory") and getattr(shared_memory, "raw_cpp", None) is not None:
+            self._agent.set_shared_memory(shared_memory.raw_cpp)
         return self
 
     def remember(self, key: str, value: Any) -> None:
@@ -201,7 +193,6 @@ class Agent:
             return default
         return self.memory.read(key, default)
 
-    # ── Phase 6b: orchestrator delegates to workers ────────
     def add_worker(self, worker: "Agent", role: str = "") -> "Agent":
         """
         Register another Agent as a worker this agent can delegate to.
@@ -217,7 +208,7 @@ class Agent:
     def delegate(self, task: str) -> str:
         """
         Break `task` into independent sub-tasks via the LLM, send each
-        to its assigned worker (via send_message, Phase 6a), run the
+        to its assigned worker (via send_message), run the
         worker, and combine all results into one summary.
 
         Sub-tasks are independent - workers can't see each other's
@@ -304,10 +295,10 @@ class Agent:
             out.elapsed_ms = 0
             return out
 
-        # Build a human-readable args format hint for the LLM planner
         if len(required) <= 1:
             args_hint = f"{required[0]} (plain string)"
         elif len(required) == 2:
+            # Two-field tools use 'a|b' pipe syntax so the LLM doesn't need JSON
             args_hint = f"'{required[0]}|{required[1]}' (pipe-separated)"
         else:
             args_hint = f"JSON object with fields: {', '.join(required)}"
@@ -347,7 +338,6 @@ class Agent:
             return fn
         return decorator
 
-    # ── Properties ────────────────────────────────────────
     @property
     def name(self) -> str:
         return self._agent.name()
@@ -386,8 +376,11 @@ class Agent:
         ctx = self._agent.context()
         tools = self._agent.tools()
 
-        self.receive_messages()  # fold any pending inbox messages into context first
+        # Drain the agent's inbox before planning so peer messages are visible in context
+        self.receive_messages()
 
+        # Surface shared team memory as a high-priority user message so the LLM
+        # treats it as ground truth rather than reasoning from scratch
         if self.memory is not None:
             mem_summary = self.memory.summary()
             if mem_summary:
@@ -400,7 +393,6 @@ class Agent:
         ctx.add_user(task)
         final_output = ""
 
-        # Only show the model tools that are actually registered right now
         active_specs = {
             name: self._tool_specs.get(name, "No description available.")
             for name in tools.tool_names()
@@ -429,6 +421,7 @@ class Agent:
                 ctx.add_tool_result(tool_name, output.result)
                 final_output = output.result
                 break
+            # On failure, feed the error back into context so the LLM can recover
             ctx.add_tool_result(tool_name, f"ERROR: {output.error}")
         else:
             final_output = "Max steps reached without completion."

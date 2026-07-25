@@ -109,7 +109,7 @@ def test_context():
     ctx.add_assistant("Hello! How can I help?")
 
     assert ctx.message_count() >= 2
-    prompt = ctx.build_prompt()
+    prompt = bytes(ctx.build_prompt()).decode("utf-8")
     assert "Hello agent!" in prompt
     print(f"\n✅ Context: {ctx.message_count()} messages")
     print(f"   Prompt preview: {prompt[:80]}...")

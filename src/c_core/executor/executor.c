@@ -11,14 +11,18 @@
 #include <signal.h>
 #include <time.h>
 
-/* ── Get current time in ms ──────────────────────────────── */
+/* Returns monotonic wall-clock time in milliseconds. Used for timeout tracking. */
 static uint64_t now_ms(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
 
-/* ── Read all data from fd into a heap buffer ────────────── */
+/*
+ * Reads all available bytes from fd into a heap-allocated buffer.
+ * Uses a doubling growth strategy capped at CA_EXEC_MAX_OUTPUT.
+ * Caller owns the returned buffer and must free() it.
+ */
 static char* read_fd_all(int fd, size_t* out_len) {
     size_t  cap  = 4096;
     size_t  len  = 0;
@@ -35,7 +39,7 @@ static char* read_fd_all(int fd, size_t* out_len) {
             buf = nb;
         }
         ssize_t n = read(fd, buf + len, cap - len - 1);
-        if (n <= 0) break;
+        if (n <= 0) break;  /* EOF or error (pipe closed by child) */
         len += (size_t)n;
         if (len >= CA_EXEC_MAX_OUTPUT - 1) break;
     }
@@ -45,7 +49,6 @@ static char* read_fd_all(int fd, size_t* out_len) {
     return buf;
 }
 
-/* ── Default config ──────────────────────────────────────── */
 ca_exec_config_t ca_exec_default_config(void) {
     ca_exec_config_t cfg;
     memset(&cfg, 0, sizeof(cfg));
@@ -54,7 +57,6 @@ ca_exec_config_t ca_exec_default_config(void) {
     return cfg;
 }
 
-/* ── Core: run process ───────────────────────────────────── */
 ca_exec_result_t ca_exec_run(const ca_exec_config_t* config) {
     ca_exec_result_t result;
     memset(&result, 0, sizeof(result));
@@ -62,7 +64,6 @@ ca_exec_result_t ca_exec_run(const ca_exec_config_t* config) {
 
     if (!config || !config->command) return result;
 
-    /* Create pipes for stdout and stderr */
     int stdout_pipe[2], stderr_pipe[2];
 
     if (pipe(stdout_pipe) < 0) return result;
@@ -75,54 +76,54 @@ ca_exec_result_t ca_exec_run(const ca_exec_config_t* config) {
     pid_t    pid   = fork();
 
     if (pid < 0) {
-        /* Fork failed */
         close(stdout_pipe[0]); close(stdout_pipe[1]);
         close(stderr_pipe[0]); close(stderr_pipe[1]);
         return result;
     }
 
     if (pid == 0) {
-        /* ── Child process ─────────────────────────────────── */
-
-        /* Redirect stdout/stderr to pipes */
+        /* Child: wire both output streams to our pipes before exec. */
         dup2(stdout_pipe[1], STDOUT_FILENO);
         dup2(stderr_pipe[1], STDERR_FILENO);
 
+        /* Close all pipe ends — child only needs the write sides, now dup'd. */
         close(stdout_pipe[0]); close(stdout_pipe[1]);
         close(stderr_pipe[0]); close(stderr_pipe[1]);
 
-        /* Change working directory if specified */
         if (config->working_dir)
             chdir(config->working_dir);
 
-        /* Build argv */
+        /* Build a NULL-terminated argv array from the config. */
         const char* argv[CA_EXEC_MAX_ARGS + 2];
         argv[0] = config->command;
         int argc = 1;
         int i    = 0;
         while (config->args[i] && argc < CA_EXEC_MAX_ARGS) {
-            argv[argc++] = config->args[i++];    /* ← FIXED: no ambiguity */
+            argv[argc++] = config->args[i++];
         }
         argv[argc] = NULL;
 
         execvp(config->command, (char* const*)argv);
 
-        /* If execvp returns, it failed */
+        /* execvp only returns on failure. Exit with 127 (POSIX convention). */
         fprintf(stderr, "[CoreAgent Executor] exec failed: %s\n",
                 strerror(errno));
         _exit(127);
     }
 
-    /* ── Parent process ──────────────────────────────────── */
+    /* Parent: close write ends — reads would block forever otherwise. */
     close(stdout_pipe[1]);
     close(stderr_pipe[1]);
 
-    /* Read output with timeout */
-    /* Set stdout_pipe[0] to non-blocking */
+    /* Set read ends non-blocking so read_fd_all() doesn't hang waiting for more data. */
     fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
     fcntl(stderr_pipe[0], F_SETFL, O_NONBLOCK);
 
-    /* Simple timeout: wait in loop, kill if exceeded */
+    /*
+     * Poll for child exit using WNOHANG to avoid blocking the parent.
+     * If the timeout is exceeded, SIGKILL the child and jump to cleanup
+     * so we still collect whatever output was buffered in the pipes.
+     */
     int    status     = 0;
     int    done       = 0;
     while (!done) {
@@ -133,15 +134,14 @@ ca_exec_result_t ca_exec_run(const ca_exec_config_t* config) {
             uint64_t elapsed = now_ms() - start;
             if (elapsed >= config->timeout_ms) {
                 kill(pid, SIGKILL);
-                waitpid(pid, &status, 0);
+                waitpid(pid, &status, 0);  /* reap to avoid zombie */
                 result.status = CA_EXEC_TIMEOUT;
                 fprintf(stderr,
                     "[CoreAgent] Process timed out after %ums\n",
                     config->timeout_ms);
-                goto cleanup;
+                goto cleanup;  /* still collect partial output below */
             }
-            /* Sleep briefly to avoid busy-waiting */
-            struct timespec sleep_ts = { 0, 5 * 1000000 }; // 5ms
+            struct timespec sleep_ts = { 0, 5 * 1000000 }; // 5ms poll interval
             nanosleep(&sleep_ts, NULL);
         }
     }
@@ -162,7 +162,6 @@ cleanup:
     return result;
 }
 
-/* ── Shell convenience wrapper ───────────────────────────── */
 ca_exec_result_t ca_exec_shell(const char* cmd, uint32_t timeout_ms) {
     ca_exec_config_t config = ca_exec_default_config();
     config.command          = "/bin/sh";
@@ -174,7 +173,6 @@ ca_exec_result_t ca_exec_shell(const char* cmd, uint32_t timeout_ms) {
     return ca_exec_run(&config);
 }
 
-/* ── Free result ─────────────────────────────────────────── */
 void ca_exec_result_free(ca_exec_result_t* result) {
     if (!result) return;
     free(result->stdout_data);

@@ -10,22 +10,22 @@
 
 namespace coreagent {
 
-/* ─────────────────────────────────────────────────────────
- * ToolInput / ToolOutput — the interface every tool uses
- * ───────────────────────────────────────────────────────── */
+/* All data a tool receives from the agent planner. */
 struct ToolInput {
-    std::string name;    // Tool name
-    std::string args;    // Raw args string (tool parses as needed)
+    std::string name; /* registered name of the tool */
+    std::string args; /* raw argument string; each tool parses this itself */
 };
 
+/* All data a tool must return to the agent. */
 struct ToolOutput {
-    std::string result;      // Tool output on success
-    bool        success;     // Did it succeed?
-    std::string error;       // Error message on failure
-    uint32_t    elapsed_ms;  // How long it took
+    std::string result;     /* tool output on success */
+    bool        success;    /* false if the tool encountered an error */
+    std::string error;      /* human-readable error message (empty on success) */
+    uint32_t    elapsed_ms; /* wall-clock execution time */
 };
 
-/* Tool function type */
+/* Every tool is a plain callable with this signature. Stored as std::function
+ * so lambdas, member functions, and plain function pointers all work. */
 using ToolFn = std::function<ToolOutput(const ToolInput&)>;
 
 struct ToolDef {
@@ -34,11 +34,10 @@ struct ToolDef {
     ToolFn      fn;
 };
 
-/* ─────────────────────────────────────────────────────────
- * ToolRegistry — register tools, dispatch by name
- * ───────────────────────────────────────────────────────── */
+/* Registry of named tools. Supports dynamic registration and name-based dispatch. */
 class ToolRegistry {
 public:
+    virtual ~ToolRegistry() = default;
 
     void registerTool(const std::string& name,
                       const std::string& description,
@@ -51,6 +50,16 @@ public:
 
         printf("[ToolRegistry] Registered: %-18s → %s\n",
                name.c_str(), description.c_str());
+    }
+
+    void removeTool(const std::string& name) {
+        tools_.erase(name);
+        for (auto it = names_.begin(); it != names_.end(); ++it) {
+            if (*it == name) {
+                names_.erase(it);
+                break;
+            }
+        }
     }
 
     ToolOutput dispatch(const ToolInput& input) const {

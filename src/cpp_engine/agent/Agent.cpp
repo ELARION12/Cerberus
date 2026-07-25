@@ -9,7 +9,6 @@
 
 namespace coreagent {
 
-/* ── Constructor ─────────────────────────────────────────── */
 Agent::Agent(const AgentConfig& config)
     : config_(config),
       state_(AgentState::IDLE),
@@ -25,7 +24,6 @@ Agent::Agent(const AgentConfig& config)
     printf("[%s]    MaxTokens: %zu\n\n",      config_.name.c_str(), config_.max_tokens);
 }
 
-/* ── State transition ────────────────────────────────────── */
 void Agent::setState(AgentState s) {
     printf("[%s] %-12s → %s\n",
            config_.name.c_str(),
@@ -34,17 +32,13 @@ void Agent::setState(AgentState s) {
     state_ = s;
 }
 
-/* ── Register a tool ─────────────────────────────────────── */
 void Agent::registerTool(const std::string& name,
                           const std::string& description,
                           ToolFn fn) {
     registry_.registerTool(name, description, fn);
 }
 
-/* ── Built-in tools ──────────────────────────────────────── */
 void Agent::setupBuiltinTools() {
-
-    /* Tool 1: shell — run bash command */
     registry_.registerTool("shell",
         "Execute a shell command, returns stdout",
         [this](const ToolInput& input) -> ToolOutput {
@@ -58,7 +52,6 @@ void Agent::setupBuiltinTools() {
         }
     );
 
-    /* Tool 2: read_file — read a file from disk */
     registry_.registerTool("read_file",
         "Read contents of a file. args = file path",
         [](const ToolInput& input) -> ToolOutput {
@@ -72,11 +65,9 @@ void Agent::setupBuiltinTools() {
         }
     );
 
-    /* Tool 3: write_file — write content to a file */
     registry_.registerTool("write_file",
         "Write content to a file. args = 'path|content'",
         [](const ToolInput& input) -> ToolOutput {
-            /* Parse: everything before first | is path */
             size_t sep = input.args.find('|');
             if (sep == std::string::npos)
                 return ToolOutput{"", false,
@@ -94,7 +85,6 @@ void Agent::setupBuiltinTools() {
         }
     );
 
-    /* Tool 4: echo — simple passthrough for testing */
     registry_.registerTool("echo",
         "Echo back the input args. Used for testing.",
         [](const ToolInput& input) -> ToolOutput {
@@ -103,14 +93,18 @@ void Agent::setupBuiltinTools() {
     );
 }
 
-/* ── THINK: analyze the task ─────────────────────────────── */
 std::string Agent::think(const std::string& task) {
     setState(AgentState::THINKING);
 
+    if (shared_memory_) {
+        std::string mem_summary = shared_memory_->summary();
+        if (!mem_summary.empty()) {
+            context_.addUser("[Shared Memory Blackboard]\n" + mem_summary);
+        }
+    }
+
     context_.addUser(task);
 
-    /* In a real agent this calls an LLM.
-     * For now: produce a structured thought about the task */
     std::string thought =
         "Task received: [" + task + "]. "
         "I will analyze what tools are needed and form a plan.";
@@ -123,17 +117,12 @@ std::string Agent::think(const std::string& task) {
     return thought;
 }
 
-/* ── PLAN: decide which tool + args to use ───────────────── */
 std::string Agent::plan(const std::string& thought) {
     setState(AgentState::PLANNING);
-
-    /* Simple rule-based planner (LLM replaces this in Phase 3)
-     * Looks for keywords in the thought/task to pick a tool */
 
     std::string prompt(context_.buildPrompt());
     std::string plan_str;
 
-    /* Keyword-based tool selection from context */
     if (prompt.find("list") != std::string::npos ||
         prompt.find("ls")   != std::string::npos ||
         prompt.find("files") != std::string::npos) {
@@ -152,11 +141,9 @@ std::string Agent::plan(const std::string& thought) {
         plan_str = "shell|free -h";
     }
     else if (prompt.find("read") != std::string::npos) {
-        /* Extract filename if mentioned */
         plan_str = "echo|No file specified";
     }
     else {
-        /* Default: echo back the thought */
         plan_str = "echo|" + thought;
     }
 
@@ -166,11 +153,9 @@ std::string Agent::plan(const std::string& thought) {
     return plan_str;
 }
 
-/* ── ACT: execute the chosen tool ────────────────────────── */
 ToolOutput Agent::act(const std::string& plan_str) {
     setState(AgentState::ACTING);
 
-    /* Parse plan_str: "tool_name|args" */
     size_t sep = plan_str.find('|');
     std::string tool_name = (sep != std::string::npos)
                             ? plan_str.substr(0, sep)
@@ -188,32 +173,33 @@ ToolOutput Agent::act(const std::string& plan_str) {
 
     ToolOutput output = registry_.dispatch(input);
 
-    /* Store result in context */
     context_.addToolResult(tool_name,
         output.success ? output.result : ("ERROR: " + output.error));
 
     return output;
 }
 
-/* ── REFLECT: evaluate result, decide if done ────────────── */
 bool Agent::reflect(const ToolOutput& result, std::string& final_output) {
     setState(AgentState::REFLECTING);
 
     if (result.success) {
-        final_output = result.result;
-        printf("[%s] ✅ Tool succeeded in %ums\n",
-               config_.name.c_str(), result.elapsed_ms);
-        printf("[%s] 📄 Result:\n%s\n",
-               config_.name.c_str(), result.result.c_str());
-        return true;   /* Done! */
+        parse_arena_.reset();
+        ParsedResult parsed = OutputParser::parse(parse_arena_.raw(), result.result);
+        final_output = std::string(parsed.extracted);
+
+        printf("[%s] ✅ Tool succeeded in %ums (Format: %s)\n",
+               config_.name.c_str(), result.elapsed_ms,
+               OutputParser::kindName(parsed.kind));
+        printf("[%s] 📄 Result (Extracted):\n%s\n",
+               config_.name.c_str(), final_output.c_str());
+        return true;
     } else {
         printf("[%s] ❌ Tool failed: %s\n",
                config_.name.c_str(), result.error.c_str());
-        return false;  /* Try again */
+        return false;
     }
 }
 
-/* ── RUN: full agent loop ────────────────────────────────── */
 std::string Agent::run(const std::string& task) {
     printf("\n╔══════════════════════════════════════════╗\n");
     printf("║  [%s] Starting task                  \n", config_.name.c_str());
@@ -230,7 +216,6 @@ std::string Agent::run(const std::string& task) {
         printf("[%s] ── Step %u/%u ───────────────────────\n\n",
                config_.name.c_str(), steps, config_.max_steps);
 
-        /* THINK → PLAN → ACT → REFLECT */
         std::string thought  = think(task);
         std::string plan_str = plan(thought);
         ToolOutput  result   = act(plan_str);

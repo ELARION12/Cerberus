@@ -1,57 +1,51 @@
 """
-shared_memory.py - A simple thread-safe blackboard that multiple
-Agent instances can read from and write to (Phase 6c).
-
-Kept deliberately simple: a key -> value store, tagged with who wrote
-each entry. Agents that join the same SharedMemory automatically see
-its contents surfaced into their planning context on each run_llm()
-call, via Agent.run_llm()'s auto-injection.
+Thread-safe key-value blackboard shared across multiple Agent instances.
+Backed by C++ native arena + pthread_rwlock for zero-FFI-overhead reads.
 """
 
-import threading
-import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, List
-
-
-@dataclass
-class MemoryEntry:
-    value: Any
-    written_by: str
-    timestamp: float = field(default_factory=time.time)
+from typing import Any, Dict, List, Optional
+try:
+    from ._coreagent_cpp import SharedMemory as _CppSharedMemory
+except ImportError:
+    _CppSharedMemory = None
 
 
 class SharedMemory:
-    """A simple key-value blackboard shared across a team of agents."""
+    """Key-value blackboard shared across a team of agents."""
 
-    def __init__(self):
-        self._data: Dict[str, MemoryEntry] = {}
-        self._lock = threading.Lock()
+    def __init__(self, capacity: int = 2 * 1024 * 1024):
+        if _CppSharedMemory is not None:
+            self._impl = _CppSharedMemory(capacity)
+        else:
+            self._impl = None
+            self._fallback: Dict[str, str] = {}
 
-    def write(self, key: str, value: Any, by: str = "unknown") -> None:
-        with self._lock:
-            self._data[key] = MemoryEntry(value=value, written_by=by)
+    def write(self, key: str, value: Any, by: str = "agent") -> None:
+        str_val = str(value)
+        if self._impl is not None:
+            self._impl.write(key, str_val, by)
+        else:
+            self._fallback[key] = str_val
 
     def read(self, key: str, default: Any = None) -> Any:
-        with self._lock:
-            entry = self._data.get(key)
-            return entry.value if entry else default
-
-    def read_all(self) -> Dict[str, Any]:
-        with self._lock:
-            return {k: e.value for k, e in self._data.items()}
-
-    def keys(self) -> List[str]:
-        with self._lock:
-            return list(self._data.keys())
+        if self._impl is not None:
+            res = self._impl.read(key, "")
+            return res if res else default
+        return self._fallback.get(key, default)
 
     def summary(self) -> str:
-        """Human-readable dump, meant to be injected into an agent's prompt."""
-        with self._lock:
-            if not self._data:
-                return ""
-            lines = [
-                f"- {k} = {e.value!r} (written by {e.written_by})"
-                for k, e in self._data.items()
-            ]
-            return "\n".join(lines)
+        """Human-readable dump injected into an agent's prompt."""
+        if self._impl is not None:
+            return self._impl.summary()
+        if not self._fallback:
+            return ""
+        return "\n".join(f"- {k} = {v}" for k, v in self._fallback.items())
+
+    def count(self) -> int:
+        if self._impl is not None:
+            return self._impl.count()
+        return len(self._fallback)
+
+    @property
+    def raw_cpp(self):
+        return self._impl

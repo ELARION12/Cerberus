@@ -3,7 +3,6 @@ CoreAgent — Bare-Metal AI Agent Runtime
 C + C++ + Python
 """
 
-# Import compiled C++ extension
 try:
     from ._coreagent_cpp import (
         Agent         as _CppAgent,
@@ -12,8 +11,12 @@ try:
         ToolInput,
         ToolOutput,
         ToolRegistry,
+        DynamicToolRegistry,
         ContextBuffer,
         MessageRole,
+        ParsedKind,
+        ParsedResult,
+        OutputParser,
         version,
         state_name,
     )
@@ -23,6 +26,7 @@ except ImportError as e:
     _IMPORT_ERROR = str(e)
 
 from .agent import Agent
+from .shared_memory import SharedMemory
 from .tools import (
     shell_tool,
     read_file_tool,
@@ -30,29 +34,27 @@ from .tools import (
     http_get_tool,
 )
 
-__version__ = "0.1.0"
+__version__ = "1.2.0"
 __author__  = "CoreAgent Contributors"
 
 __all__ = [
-    # Main user-facing class
     "Agent",
-
-    # C++ types (advanced users)
     "AgentConfig",
     "AgentState",
     "ToolInput",
     "ToolOutput",
     "ToolRegistry",
+    "DynamicToolRegistry",
     "ContextBuffer",
     "MessageRole",
-
-    # Built-in tools
+    "ParsedKind",
+    "ParsedResult",
+    "OutputParser",
+    "SharedMemory",
     "shell_tool",
     "read_file_tool",
     "write_file_tool",
     "http_get_tool",
-
-    # Helpers
     "version",
     "state_name",
 ]

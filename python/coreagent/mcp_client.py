@@ -1,12 +1,7 @@
 """
-mcp_client.py - Bridge between CoreAgent's synchronous tool interface
-and MCP (Model Context Protocol) servers, which use an async API.
-
-MCP servers speak JSON-RPC over stdio (or HTTP). The official Python
-SDK ('mcp' package) is fully async. CoreAgent's tool callbacks are
-plain synchronous Python functions called from C++ via pybind11, so
-this module runs a dedicated asyncio event loop on a background
-thread and exposes blocking, synchronous methods on top of it.
+Bridge between CoreAgent's synchronous tool interface
+and MCP servers, which communicate via async JSON-RPC over stdio.
+Runs a background asyncio event loop and exposes blocking synchronous methods.
 """
 
 import asyncio
@@ -25,9 +20,11 @@ class MCPError(Exception):
 
 class MCPToolBridge:
     """
-    Connects to one MCP server over stdio and exposes its tools
-    synchronously, so they can be registered into CoreAgent's
-    ToolRegistry via Agent.add_tool().
+    Synchronous wrapper around an async MCP session.
+
+    Launches a background thread that owns the asyncio event loop and the
+    MCP stdio process. All public methods are blocking and thread-safe;
+    they submit coroutines to the background loop via run_coroutine_threadsafe.
     """
 
     def __init__(
@@ -40,6 +37,8 @@ class MCPToolBridge:
         self.args = args or []
         self.env = env
 
+        self.on_schema_change = None
+
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
         self._session: Optional[ClientSession] = None
@@ -48,11 +47,11 @@ class MCPToolBridge:
         self._ready = threading.Event()
         self._connect_error: Optional[BaseException] = None
 
-    # ── lifecycle ──────────────────────────────────────────
     def connect(self, timeout: float = 20.0) -> None:
         """Start the background event loop and open the MCP session."""
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
+        # Block until the background loop signals it is ready (or until timeout)
         if not self._ready.wait(timeout=timeout):
             raise MCPError(
                 f"Timed out connecting to MCP server: {self.command} {' '.join(self.args)}"
@@ -100,7 +99,6 @@ class MCPToolBridge:
     async def _signal_stop(self):
         self._stop_event.set()
 
-    # ── tool discovery / invocation ───────────────────────
     def list_tools(self) -> List[Dict[str, Any]]:
         """Returns [{'name':..., 'description':..., 'input_schema':...}, ...]"""
         result = self._run_coro(self._session.list_tools())
@@ -120,6 +118,7 @@ class MCPToolBridge:
         return "\n".join(texts) if texts else str(result.content)
 
     def _run_coro(self, coro):
+        """Submit a coroutine to the background event loop and block for the result."""
         if not self._loop or not self._session:
             raise MCPError("Not connected - call connect() first")
         fut = asyncio.run_coroutine_threadsafe(coro, self._loop)
@@ -127,13 +126,6 @@ class MCPToolBridge:
 
 
 if __name__ == "__main__":
-    # Standalone smoke test - just connects and lists tools.
-    # No CoreAgent integration yet, so we can verify the MCP
-    # handshake works in isolation first.
-    #
-    # Launches our own mcp_filesystem_server.py (pure Python) instead
-    # of the official Node.js reference server - keeps the whole
-    # stack to C + C++ + Python, no JavaScript dependency.
     import os
     import sys
 
@@ -141,7 +133,7 @@ if __name__ == "__main__":
     server_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mcp_filesystem_server.py")
 
     bridge = MCPToolBridge(
-        command=sys.executable,       # same Python interpreter as this venv
+        command=sys.executable,
         args=[server_script, project_dir],
     )
     print(f"Connecting to filesystem MCP server, scoped to: {project_dir}")

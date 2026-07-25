@@ -1,9 +1,8 @@
 """
-llm.py - Ollama LLM client for CoreAgent
+Ollama LLM client for CoreAgent.
 
-Lightweight HTTP client for a local Ollama server, used to replace/augment
-CoreAgent's rule-based keyword planner (Agent.cpp's plan()) with real
-LLM-driven planning. Stdlib only - no external dependencies required.
+Lightweight HTTP client for a local Ollama server.
+Stdlib only - no external dependencies required.
 """
 
 import json
@@ -93,9 +92,8 @@ class OllamaClient:
             eval_count=body.get("eval_count", 0),
         )
 
-    # JSON schema the model's output is grammar-constrained to match.
-    # This is enforced by Ollama at the token level, not just requested
-    # in the prompt - far more reliable than a text delimiter format.
+    # JSON schema used to grammar-constrain the model's output at the token level
+    # (enforced by Ollama, not just requested in the prompt). Returns {tool, args}.
     PLAN_SCHEMA = {
         "type": "object",
         "properties": {
@@ -140,12 +138,14 @@ class OllamaClient:
             tool = str(parsed.get("tool", "echo")).strip()
             args = str(parsed.get("args", "")).strip()
         except (json.JSONDecodeError, AttributeError, TypeError):
-            # Fall back gracefully if the model still produced garbage
+            # Graceful fallback: echo the raw response so the caller can debug
             tool, args = "echo", f"(unparseable model response: {result.text[:100]})"
 
+        # Return in the "tool_name|args" format that Agent::act() expects
         return f"{tool}|{args}"
 
-    # ── Phase 6b: orchestrator delegation ─────────────────
+    # Schema for the orchestrator delegation call. Returns a list of {worker, subtask} pairs.
+    # Sub-tasks must be independent because workers run concurrently and cannot share results.
     DELEGATE_SCHEMA = {
         "type": "object",
         "properties": {
@@ -200,8 +200,6 @@ class OllamaClient:
 
 
 if __name__ == "__main__":
-    # Standalone smoke test - run this file directly to sanity check
-    # your Ollama setup before wiring it into agent.py
     client = OllamaClient()
     print("Ollama alive:", client.is_alive())
 

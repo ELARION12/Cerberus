@@ -1,5 +1,4 @@
 """
-python/coreagent/cli.py
 Simple CLI to run CoreAgent from the terminal.
 
 Usage:

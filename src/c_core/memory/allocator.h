@@ -8,8 +8,7 @@
 extern "C" {
 #endif
 
-/* Shrink from 64MB down to 1MB to optimize for low memory consumption */
-#define CA_ARENA_DEFAULT_SIZE  (1 * 1024 * 1024) 
+#define CA_ARENA_DEFAULT_SIZE  (1 * 1024 * 1024)
 #define CA_ALIGN               32
 
 #if defined(__GNUC__) || defined(__clang__)

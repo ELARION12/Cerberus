@@ -24,27 +24,19 @@ struct Message {
     uint64_t         timestamp_ms;
 };
 
-// ContextBuffer v1.1
-//
-// Two arenas, two different lifetime shapes:
-//
-//  - retained_ / standby_ : hold Message content. Messages are evicted
-//    FIFO (oldest first) from the front of the deque, but ca_arena_t can
-//    only reclaim LIFO (via save/restore). To reclaim space from FIFO
-//    eviction we do periodic *compaction*: copy the still-live messages
-//    into standby_, swap retained_/standby_, and ca_arena_reset() the old
-//    one. This is a semispace copy, same idea as a copying GC.
-//
-//  - scratch_ : holds the transient buildPrompt() output. We save a mark
-//    at construction and ca_arena_restore() to it at the start of every
-//    buildPrompt() call, so each call reuses the same space instead of
-//    growing unbounded -- there is at most one "live" prompt at a time,
-//    which matches how the hot loop actually consumes it.
+/*
+ * ContextBuffer stores conversation messages in two equal-sized arenas
+ * (retained_ / standby_) using a semispace copy-GC strategy:
+ *   - New message content is allocated into retained_.
+ *   - When retained_ is >75% full, compact() copies live messages into
+ *     standby_, swaps the two arenas, and resets the old one.
+ * A third arena (scratch_) is used solely for buildPrompt() output and is
+ * reset before each call, so the prompt buffer is reused rather than grown.
+ */
 class ContextBuffer {
 public:
-    // arena_capacity applies to BOTH retained_ and standby_ (they must be
-    // equal size for the ping-pong swap to be safe). scratch_capacity is
-    // separate and sized for one prompt's worth of text.
+    /* arena_capacity applies to BOTH retained_ and standby_ (ping-pong swap requires equal sizes).
+     * scratch_capacity should be large enough for one full serialised prompt. */
     ContextBuffer(size_t arena_capacity, size_t scratch_capacity, size_t max_tokens = 4096)
         : max_tokens_(max_tokens), current_tokens_(0) {
         retained_ = ca_arena_create(arena_capacity);
@@ -62,7 +54,6 @@ public:
         if (scratch_)  ca_arena_destroy(scratch_);
     }
 
-    // Not copyable (owns raw arenas); movable if you need it later.
     ContextBuffer(const ContextBuffer&) = delete;
     ContextBuffer& operator=(const ContextBuffer&) = delete;
 
@@ -81,10 +72,14 @@ public:
         trim();
     }
 
-    // Builds into scratch_, rolling back to scratch_mark_ first so repeated
-    // calls don't accumulate. Returned view is valid until the NEXT
-    // buildPrompt() call (or destruction) -- caller should consume it
-    // before calling again, which matches the Think->Plan->Act loop shape.
+    /*
+     * Serialise all messages into the scratch arena as a flat byte sequence.
+     * The arena is restored to its saved mark first so each call overwrites the
+     * previous prompt — only one prompt is live at a time, matching the
+     * THINK → PLAN → ACT usage pattern.
+     * Wire format: '[' ["TOOL:"] content '\n'  for each message.
+     * Returned view points into arena memory; valid until the next buildPrompt() call.
+     */
     std::string_view buildPrompt() {
         ca_arena_restore(scratch_, scratch_mark_);
 
@@ -95,8 +90,6 @@ public:
 
         char* out = static_cast<char*>(ca_arena_alloc(scratch_, total_len));
         if (!out) {
-            // Scratch too small for this prompt -- caller's arena sizing
-            // is wrong; surface it loudly rather than silently truncate.
             throw std::runtime_error("ContextBuffer: scratch arena too small for buildPrompt()");
         }
 
@@ -125,13 +118,8 @@ public:
         ca_arena_reset(retained_);
     }
 
-    // Exposed for tuning/tests -- how full the retained arena is.
     size_t retainedBytesUsed() const { return ca_arena_used(retained_); }
 
-    // Human-readable status line -- kept for compatibility with call
-    // sites (Agent::run(), pybind bindings) written against the
-    // pre-v1.1 API. Prefer messageCount()/tokenCount()/retainedBytesUsed()
-    // directly for anything programmatic.
     void printSummary() const {
         printf("[ContextBuffer] messages=%zu tokens=%zu retained_bytes=%zu/%zu\n",
                messages_.size(), current_tokens_,
@@ -152,9 +140,6 @@ private:
         if (text.empty()) return {};
         char* ptr = static_cast<char*>(ca_arena_alloc(arena, text.size()));
         if (!ptr) {
-            // Was previously an unchecked memcpy into a possibly-null
-            // pointer. Compact and retry once before giving up -- a full
-            // retained arena is exactly what compact() exists to fix.
             compact();
             ptr = static_cast<char*>(ca_arena_alloc(arena, text.size()));
             if (!ptr) {
@@ -177,10 +162,8 @@ private:
 
     size_t estimateTokens(std::string_view text) const { return (text.size() + 3) / 4; }
 
-    // Evicts oldest non-SYSTEM messages until back under max_tokens_.
-    // This only shrinks the logical deque -- see compact() for actually
-    // reclaiming the arena bytes those messages occupied.
     void trim() {
+        /* Evict oldest non-SYSTEM messages until token budget is satisfied. */
         while (current_tokens_ > max_tokens_ && messages_.size() > 1) {
             for (auto it = messages_.begin(); it != messages_.end(); ++it) {
                 if (it->role != MessageRole::SYSTEM) {
@@ -190,10 +173,8 @@ private:
                 }
             }
         }
-        // Once eviction has freed up a meaningful fraction of logical
-        // tokens, the arena itself is still holding the dead bytes.
-        // Compact opportunistically rather than waiting for OOM, so the
-        // OOM path in copyToArena() is a safety net, not the normal case.
+        /* Compact proactively when the arena is 75% full so OOM is the exception,
+         * not the normal path. */
         if (ca_arena_used(retained_) > (retained_capacity() * 3) / 4) {
             compact();
         }
@@ -201,9 +182,11 @@ private:
 
     size_t retained_capacity() const { return retained_->capacity; }
 
-    // Semispace copy: copy every still-live message's bytes into standby_,
-    // rewriting Message::content/tool_name to point into standby_, then
-    // swap retained_/standby_ and reset what was retained_ (now unused).
+    /*
+     * Semispace compaction: copy all live message content into standby_,
+     * rewriting string_view pointers to the new location, then swap arenas
+     * and reset the now-empty old retained_ arena.
+     */
     void compact() {
         ca_arena_reset(standby_);
         for (auto& m : messages_) {

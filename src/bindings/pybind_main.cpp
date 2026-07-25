@@ -5,18 +5,16 @@
 #include "Agent.hpp"
 #include "AgentState.hpp"
 #include "ToolRegistry.hpp"
+#include "DynamicToolRegistry.hpp"
 #include "ContextBuffer.hpp"
+#include "OutputParser.hpp"
+#include "SharedMemory.hpp"
 
 namespace py = pybind11;
 using namespace coreagent;
 
-/* ─────────────────────────────────────────────────────────
- * CoreAgent Python Bindings
- * Exposes C++ engine to Python via pybind11
- * ───────────────────────────────────────────────────────── */
 
 PYBIND11_MODULE(_coreagent_cpp, m) {
-    /* ── AgentState enum ──────────────────────────────── */
     py::enum_<AgentState>(m, "AgentState")
         .value("IDLE",       AgentState::IDLE)
         .value("THINKING",   AgentState::THINKING)
@@ -27,7 +25,6 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .value("ERROR",      AgentState::ERROR)
         .export_values();
 
-    /* ── MessageRole enum ─────────────────────────────── */
     py::enum_<MessageRole>(m, "MessageRole")
         .value("SYSTEM",    MessageRole::SYSTEM)
         .value("USER",      MessageRole::USER)
@@ -35,7 +32,22 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .value("TOOL",      MessageRole::TOOL)
         .export_values();
 
-    /* ── ToolInput ────────────────────────────────────── */
+    py::enum_<ParsedKind>(m, "ParsedKind")
+        .value("JSON_OBJECT", ParsedKind::JSON_OBJECT)
+        .value("JSON_ARRAY",  ParsedKind::JSON_ARRAY)
+        .value("SCALAR",      ParsedKind::SCALAR)
+        .value("PLAIN_TEXT",  ParsedKind::PLAIN_TEXT)
+        .export_values();
+
+    py::class_<ParsedResult>(m, "ParsedResult")
+        .def(py::init<>())
+        .def_property_readonly("kind", [](const ParsedResult& r) { return r.kind; })
+        .def_property_readonly("raw", [](const ParsedResult& r) { return std::string(r.raw); })
+        .def_property_readonly("extracted", [](const ParsedResult& r) { return std::string(r.extracted); });
+
+    py::class_<OutputParser>(m, "OutputParser")
+        .def_static("kind_name", &OutputParser::kindName);
+
     py::class_<ToolInput>(m, "ToolInput")
         .def(py::init<>())
         .def_readwrite("name", &ToolInput::name)
@@ -45,7 +57,6 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
                  + "' args='" + t.args + "'>";
         });
 
-    /* ── ToolOutput ───────────────────────────────────── */
     py::class_<ToolOutput>(m, "ToolOutput")
         .def(py::init<>())
         .def_readwrite("result",     &ToolOutput::result)
@@ -58,7 +69,6 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
                    " result='" + o.result.substr(0, 40) + "'>";
         });
 
-    /* ── ToolRegistry ─────────────────────────────────── */
     py::class_<ToolRegistry>(m, "ToolRegistry")
         .def(py::init<>())
         .def("register_tool",
@@ -82,13 +92,51 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
             py::arg("description"),
             py::arg("fn")
         )
+        .def("remove_tool", &ToolRegistry::removeTool)
         .def("dispatch",    &ToolRegistry::dispatch)
         .def("has_tool",    &ToolRegistry::hasTool)
         .def("tool_names",  &ToolRegistry::toolNames)
         .def("size",        &ToolRegistry::size)
         .def("print_all",   &ToolRegistry::printAll);
 
-    /* ── Message ──────────────────────────────────────── */
+    py::class_<MCPToolSchema>(m, "MCPToolSchema")
+        .def(py::init<>())
+        .def_readwrite("name",          &MCPToolSchema::name)
+        .def_readwrite("description",   &MCPToolSchema::description)
+        .def_readwrite("server_id",     &MCPToolSchema::server_id)
+        .def_readwrite("required_args", &MCPToolSchema::required_args);
+
+    py::class_<DynamicToolRegistry, ToolRegistry>(m, "DynamicToolRegistry")
+        .def(py::init<>())
+        .def("register_mcp",
+            [](DynamicToolRegistry& reg,
+               const MCPToolSchema& schema,
+               py::function py_fn) {
+                reg.registerMCP(schema,
+                    [py_fn](const ToolInput& input) -> ToolOutput {
+                        py::gil_scoped_acquire acquire;
+                        try {
+                            py::object result = py_fn(input);
+                            return result.cast<ToolOutput>();
+                        } catch (const py::error_already_set& e) {
+                            return ToolOutput{"", false,
+                                std::string("Python error: ") + e.what(), 0};
+                        }
+                    });
+            })
+        .def("teardown_server", &DynamicToolRegistry::teardownServer)
+        .def("mcp_schemas",     &DynamicToolRegistry::mcpSchemas)
+        .def("server_count",    &DynamicToolRegistry::serverCount);
+
+    py::class_<SharedMemory>(m, "SharedMemory")
+        .def(py::init<size_t>(), py::arg("capacity") = 2 * 1024 * 1024)
+        .def("write",   &SharedMemory::write,
+             py::arg("key"), py::arg("value"), py::arg("author") = "agent")
+        .def("read",    &SharedMemory::read,
+             py::arg("key"), py::arg("default_val") = "")
+        .def("summary", &SharedMemory::summary)
+        .def("count",   &SharedMemory::count);
+
     py::class_<Message>(m, "Message")
         .def(py::init<>())
         .def_readwrite("role",         &Message::role)
@@ -96,7 +144,6 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .def_readwrite("tool_name",    &Message::tool_name)
         .def_readwrite("timestamp_ms", &Message::timestamp_ms);
 
-    /* ── ContextBuffer ────────────────────────────────── */
     py::class_<ContextBuffer>(m, "ContextBuffer")
         .def(py::init<size_t, size_t, size_t>(),
              py::arg("arena_capacity"),
@@ -106,18 +153,14 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .def("add_user",        &ContextBuffer::addUser)
         .def("add_assistant",   &ContextBuffer::addAssistant)
         .def("add_tool_result", &ContextBuffer::addToolResult)
-        /* ── ZERO-COPY BUFFER PROTOCOL START ── */
         .def("build_prompt", [](ContextBuffer& cb) -> py::memoryview {
             std::string_view sv = cb.buildPrompt();
-            
-            // Expose the C arena memory directly to Python without copying
             return py::memoryview::from_memory(
-                const_cast<char*>(sv.data()), 
-                sv.size(), 
-                true // readonly flag prevents Python from corrupting the C arena
+                const_cast<char*>(sv.data()),
+                sv.size(),
+                true
             );
         })
-        /* ── ZERO-COPY BUFFER PROTOCOL END ── */
         .def("messages",        &ContextBuffer::messages)
         .def("message_count",   &ContextBuffer::messageCount)
         .def("token_count",     &ContextBuffer::tokenCount)
@@ -125,7 +168,6 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .def("clear",           &ContextBuffer::clear)
         .def("print_summary",   &ContextBuffer::printSummary);
 
-    /* ── AgentConfig ──────────────────────────────────── */
     py::class_<AgentConfig>(m, "AgentConfig")
         .def(py::init<>())
         .def_readwrite("name",          &AgentConfig::name)
@@ -137,7 +179,6 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .def_readwrite("context_arena_capacity",   &AgentConfig::context_arena_capacity)
         .def_readwrite("context_scratch_capacity", &AgentConfig::context_scratch_capacity);
 
-    /* ── Agent ────────────────────────────────────────── */
     py::class_<Agent>(m, "Agent")
         .def(py::init<const AgentConfig&>(),
              py::arg("config") = AgentConfig{})
@@ -171,13 +212,14 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .def("state",      &Agent::state)
         .def("state_name", &Agent::stateName)
         .def("name",       &Agent::name)
+        .def("set_shared_memory", &Agent::setSharedMemory)
 
         .def("context",
             [](Agent& a) -> ContextBuffer& { return a.context(); },
             py::return_value_policy::reference_internal)
 
         .def("tools",
-            [](Agent& a) -> ToolRegistry& { return a.tools(); },
+            [](Agent& a) -> DynamicToolRegistry& { return a.tools(); },
             py::return_value_policy::reference_internal)
 
         .def("__repr__", [](const Agent& a) {
@@ -185,8 +227,7 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
                  + "' state=" + a.stateName() + ">";
         });
 
-    /* ── Module-level helpers ─────────────────────────── */
-    m.def("version", []() { return "0.1.0"; });
+    m.def("version", []() { return "1.2.0"; });
     m.def("state_name", [](AgentState s) {
         return agentStateToString(s);
     });

@@ -6,9 +6,6 @@
 
 namespace coreagent {
 
-/* ─────────────────────────────────────────────────────────
- * ExecResult — C++ friendly version of ca_exec_result_t
- * ───────────────────────────────────────────────────────── */
 struct ExecResult {
     std::string      stdout_data;
     std::string      stderr_data;
@@ -21,10 +18,6 @@ struct ExecResult {
     bool failed()  const { return !ok();                                  }
 };
 
-/* ─────────────────────────────────────────────────────────
- * Executor — static helper to run shell commands
- * Automatically frees C-level resources
- * ───────────────────────────────────────────────────────── */
 class Executor {
 public:
     static ExecResult shell(const std::string& cmd,
@@ -38,7 +31,7 @@ public:
         result.elapsed_ms  = raw.elapsed_ms;
         result.status      = raw.status;
 
-        ca_exec_result_free(&raw); /* Always clean up C resources */
+        ca_exec_result_free(&raw);
         return result;
     }
 };
