@@ -29,3 +29,7 @@ tests/test_cpp_engine
 
 # Scratchpad testing scripts
 test_qwen.py
+
+# Personal files (not part of the project)
+Portfolio.html
+Resume.pdf

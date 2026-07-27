@@ -1,0 +1,14 @@
+# Linguist overrides — ensure GitHub shows only project languages (Python, C++, C)
+
+# Mark non-code files so Linguist ignores them in language stats
+*.md linguist-documentation
+*.svg linguist-documentation
+*.gif linguist-documentation
+*.pdf linguist-documentation
+*.html linguist-documentation
+*.txt linguist-documentation
+LICENSE linguist-documentation
+
+# CMake files are build config, not project code
+CMakeLists.txt linguist-documentation
+Makefile linguist-detectable=false
