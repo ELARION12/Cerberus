@@ -4,7 +4,28 @@ All notable changes to the **IronAgent** framework are documented here.
 
 ---
 
-## 🚀 [v1.2.0] - 2026-07-25 (Latest Build)
+## 🚀 [v1.3.0] - 2026-07-29 (Latest Build)
+
+### 🌟 Major Highlights & System Architecture Expansion
+
+Version **v1.3.0** introduces three core pillars designed to make IronAgent a production-grade, highly autonomous agent framework: **Hierarchical C++ Swarm Orchestration**, **Embedded SIMD Vector Memory**, and **Lockless Event Ring Telemetry**.
+
+#### 1. 🐝 Hierarchical C++ Swarm Orchestrator (`SwarmOrchestrator`)
+- **Async Fan-Out / Fan-In:** Parallel worker delegation executed directly on the C core thread pool (`ca_thread_pool_t`) using `std::packaged_task` and `std::future`.
+- **Zero Copy Delegation:** Subtasks are executed asynchronously across threads without Python GIL blocking or process serialization penalties.
+- **Resilient Execution:** Per-worker timeout enforcement, exception isolation, and complete `SwarmSummary` aggregation.
+
+#### 2. 🧠 Embedded SIMD Vector Memory (`VectorBuffer`)
+- **AVX2 & NEON Acceleration:** Vector dot-product operations accelerated with hardware AVX2 (x86-64) and NEON (ARM64) SIMD intrinsics with automatic scalar fallbacks.
+- **In-Memory Zero-Copy RAG:** Directly embeds document chunks and performs L2-normalised cosine similarity top-k retrieval directly inside `ContextBuffer` without external vector database dependencies.
+
+#### 3. 📡 Lockless Event Ring Telemetry (`ca_ringbuf_t` & `Telemetry`)
+- **Lock-Free Telemetry Ring:** Single-Producer Single-Consumer (SPSC) lockless ring buffer using C11 atomics and cache-line aligned (64-byte) atomic head/tail cursors to eliminate false sharing.
+- **Microsecond Span Tracing & OpenTelemetry:** High-resolution monotonic nanosecond timing (`ca_now_ns`) with zero-alloc event emitting and direct OpenTelemetry (OTLP) NDJSON log exporting.
+
+---
+
+## ⚡ [v1.2.0] - 2026-07-25
 
 ### 🌟 Major Highlights & Architecture Overhaul
 

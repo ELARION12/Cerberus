@@ -6,29 +6,29 @@
   <a href="https://isocpp.org/"><img src="https://img.shields.io/badge/C%2B%2B-17%2F20-00599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="C++"></a>
   <a href="https://en.wikipedia.org/wiki/C11_(C_standard_revision)"><img src="https://img.shields.io/badge/C-11-282C34.svg?style=for-the-badge&logo=c&logoColor=white" alt="C"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Latest_Build-v1.2.0-brightgreen.svg?style=for-the-badge" alt="Latest Build"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Latest_Build-v1.3.0-brightgreen.svg?style=for-the-badge" alt="Latest Build"></a>
   <br />
   <br />
 </div>
 
 > [!IMPORTANT]
-> **IronAgent (v1.2.0)** is an ultra-high-performance, bare-metal AI agent runtime built in pure **C, C++, and Python**. Designed to eliminate the execution latency, memory bloat, and garbage collection pauses of heavy orchestration frameworks, IronAgent executes the core `Think ➔ Plan ➔ Act ➔ Reflect` state machine directly inside native compiled code.
+> **IronAgent (v1.3.0)** is an ultra-high-performance, bare-metal AI agent runtime built in pure **C11, C++17, and Python**. Designed to eliminate the execution latency, memory bloat, and garbage collection pauses of heavy orchestration frameworks, IronAgent executes the core `Think ➔ Plan ➔ Act ➔ Reflect` state machine, swarm orchestration, SIMD RAG vector memory, and lockless telemetry directly inside native compiled code.
 
 ---
 
-## ⚡ Core Performance Snapshot (V1.2.0)
+## ⚡ Core Performance Snapshot (V1.3.0)
 
 <div align="center">
   <img src="bench.gif" alt="IronAgent Benchmark vs LangChain" width="100%"/>
 </div>
 
-| Metric | **IronAgent V1.2.0** | **LangChain / Heavy Frameworks** | **Performance Delta** |
+| Metric | **IronAgent V1.3.0** | **LangChain / Heavy Frameworks** | **Performance Delta** |
 |---|---|---|---|
 | **Hot-Loop Throughput** | **272,487 iterations/sec** | ~2,500 – 5,000 iterations/sec | **~50× to 100× Faster** |
 | **50,000 Context Steps Time** | **0.183 seconds** | ~10.0 – 20.0 seconds | **~99% Time Reduction** |
-| **Memory Footprint (RSS)** | **14.0 MB – 15.3 MB** | ~150 MB – 400 MB+ | **~10× to 25× Lighter** |
-| **Garbage Collection (GC)** | **Zero GC pressure** | Frequent GC pauses & spikes | **Deterministic Execution** |
-| **Data Copying** | Zero-Copy `py::memoryview` | Heap string duplication | **Zero FFI Copying** |
+| **Memory Footprint (RSS)** | **14.0 MB – 16.2 MB** | ~150 MB – 400 MB+ | **~10× to 25× Lighter** |
+| **Vector Dot-Product (SIMD)** | **AVX2 / NEON hardware native** | Python NumPy / PyTorch overhead | **Microsecond Top-K Search** |
+| **Telemetry Overhead** | **Lock-free (<50ns / event)** | Heavy logging wrappers / GC allocs | **Near-Zero Telemetry Cost** |
 
 ---
 
@@ -41,6 +41,9 @@ Modern AI agent frameworks (LangChain, AutoGen, CrewAI) treat orchestration as a
 2. **Context Window Management:** Dual-arena semispace copying garbage collection (`ContextBuffer`) for $O(1)$ context sliding windows.
 3. **AST Output Parsing:** Hand-rolled C++ parser (`OutputParser`) for JSON Objects, Arrays, and POSIX ERE Regex without third-party dependencies.
 4. **Parallel Multi-Agent Communication:** Native C shared memory (`ca_shm_t`) with POSIX Multi-Reader Single-Writer (`pthread_rwlock_t`) locks bypassing Python's Global Interpreter Lock (GIL).
+5. **Hierarchical Swarm Delegation:** Native C++ async fan-out/fan-in worker orchestrator (`SwarmOrchestrator`) built on POSIX pthreads.
+6. **Embedded SIMD Vector RAG:** AVX2/NEON vector dot-product engine (`VectorBuffer`) for zero-dependency local retrieval.
+7. **Lockless Telemetry Ring Buffer:** Single-Producer Single-Consumer lockless event ring (`ca_ringbuf_t`) with OpenTelemetry NDJSON export.
 
 ---
 
@@ -68,16 +71,20 @@ graph TD
         Bridge{py::memoryview & Trampolines}:::boundary
     end
 
-    subgraph Layer2 [C++ Engine State Machine]
+    subgraph Layer2 [C++ Engine State Machine & Systems]
         State[Think ➔ Plan ➔ Act ➔ Reflect]:::cpp
+        Swarm[SwarmOrchestrator: Fan-Out/In]:::cpp
+        Vector[VectorBuffer: AVX2/NEON SIMD RAG]:::cpp
         Parser[OutputParser: JSON / Regex]:::cpp
         DynReg[DynamicToolRegistry: Hot Swap]:::cpp
         Ctx[ContextBuffer: Semispace Arena]:::cpp
+        TelemCPP[Telemetry: RAII Ring Buffer Wrapper]:::cpp
     end
 
     subgraph Layer3 [C Bare-Metal Core]
         Arena[ca_arena_t: 32-byte SIMD Arena]:::ccore
         SHM[ca_shm_t: pthread_rwlock_t Blackboard]:::ccore
+        Ring[ca_ringbuf_t: Lockless SPSC Ring Buffer]:::ccore
         Threads[ca_thread_pool_t: Lazy Pthread Pool]:::ccore
         Exec[ca_exec_t: Process Executor]:::ccore
     end
@@ -89,10 +96,15 @@ graph TD
     MCPBridge <--> Bridge
     API <--> Bridge
     Bridge <--> State
+    Bridge <--> Swarm
+    Bridge <--> Vector
     State --> Parser
     State --> DynReg
     State --> Ctx
     State --> SHM
+    Swarm --> Threads
+    Vector --> Arena
+    TelemCPP --> Ring
     Ctx --> Arena
     DynReg --> Threads
     DynReg --> Exec
@@ -100,23 +112,23 @@ graph TD
 
 ---
 
-## 🛠️ V1.2.0 Feature Breakdown
+## 🛠️ V1.3.0 Feature Breakdown
 
-### 1. ⚡ C++ AST Output Parser (`OutputParser`)
-Located in [`src/cpp_engine/parser/`](file:///home/elarion/Desktop/IronAgent/src/cpp_engine/parser/), `OutputParser` evaluates tool outputs inside C++ during `Agent::reflect()`:
-- **Formats Handled:** `JSON_OBJECT`, `JSON_ARRAY`, `SCALAR`, and `PLAIN_TEXT`.
-- **POSIX ERE Regex:** Regex patterns are evaluated via system `regex.h` without external libraries.
-- **Zero Allocations:** Extracted tokens point into arena memory without string copies.
+### 1. 🐝 Hierarchical C++ Swarm Orchestrator (`SwarmOrchestrator`)
+Located in [`src/cpp_engine/swarm/`](file:///home/elarion/Desktop/IronAgent/src/cpp_engine/swarm/):
+- **Async Fan-Out / Fan-In:** Parallel worker delegation executed on the C worker thread pool (`ca_thread_pool_t`) using `std::packaged_task` and `std::future`.
+- **Zero GIL Blocking:** Multi-worker task execution bypasses Python GIL bottlenecks completely.
+- **Resilient Aggregation:** Isolates worker failures, enforces worker timeout limits, and compiles outputs into a unified `SwarmSummary`.
 
-### 2. 🔌 Dynamic Tool Registry (`DynamicToolRegistry`)
-Located in [`src/cpp_engine/tools/`](file:///home/elarion/Desktop/IronAgent/src/cpp_engine/tools/):
-- **Hot-Swapping:** Remote MCP (Model Context Protocol) tool schemas can be registered or unregistered while the agent state machine is running.
-- **Server Isolation:** `teardownServer(server_id)` cleanly strips all tools belonging to a disconnected remote MCP server without corrupting main memory.
+### 2. 🧠 Embedded SIMD Vector Memory (`VectorBuffer`)
+Located in [`src/cpp_engine/memory/`](file:///home/elarion/Desktop/IronAgent/src/cpp_engine/memory/):
+- **Hardware Acceleration:** Computes vector dot-products using AVX2 (x86-64) or NEON (ARM64) SIMD intrinsics with scalar fallbacks.
+- **In-Memory Zero-Copy RAG:** Stores L2-normalised float embeddings and text payloads directly in arena memory for instant local RAG context injection.
 
-### 3. 🧠 Native C Shared Memory (`ca_shm_t` & `pthread_rwlock_t`)
-Located in [`src/c_core/memory/`](file:///home/elarion/Desktop/IronAgent/src/c_core/memory/):
-- **Multi-Reader / Single-Writer Lock:** Multiple worker agents can read shared blackboard facts simultaneously without blocking.
-- **C++ Auto-Injection:** `Agent::think()` automatically reads shared memory summaries in C++ and prepends them to the prompt context with zero FFI calls.
+### 3. 📡 Lockless Event Ring Telemetry (`ca_ringbuf_t` & `Telemetry`)
+Located in [`src/c_core/telemetry/`](file:///home/elarion/Desktop/IronAgent/src/c_core/telemetry/):
+- **Lock-Free Ring Buffer:** Single-Producer Single-Consumer (SPSC) ring buffer with 64-byte cache-line aligned atomic cursors preventing false sharing.
+- **OpenTelemetry Export:** Serializes high-precision nanosecond traces into standard OpenTelemetry (OTLP) NDJSON log format.
 
 ---
 
@@ -132,28 +144,34 @@ IronAgent/
 │   │   │   └── shared_memory.c/.h # Native C ca_shm_t with pthread_rwlock_t
 │   │   ├── threading/
 │   │   │   └── thread_pool.c/.h   # Lazy pthread worker pool
+│   │   ├── telemetry/
+│   │   │   └── ringbuf.c/.h       # Lockless SPSC telemetry ring buffer
 │   │   └── executor/
 │   │       └── executor.c/.h      # Subprocess execution & pipe redirection
-│   ├── cpp_engine/                # C++17 Reasoning State Machine
+│   ├── cpp_engine/                # C++17 Reasoning & System Modules
 │   │   ├── agent/
 │   │   │   ├── Agent.cpp/.hpp     # Think-Plan-Act-Reflect engine
 │   │   │   └── AgentState.hpp     # Typed state transitions
+│   │   ├── swarm/
+│   │   │   └── SwarmOrchestrator.hpp # C++ Async Fan-Out/Fan-In Orchestrator
+│   │   ├── memory/
+│   │   │   ├── ContextBuffer.hpp  # Semispace ping-pong GC context window
+│   │   │   └── VectorBuffer.hpp   # AVX2/NEON SIMD Vector RAG Memory
 │   │   ├── parser/
 │   │   │   ├── OutputParser.cpp/.hpp # Fast AST JSON & Regex parser
 │   │   ├── tools/
 │   │   │   ├── ToolRegistry.hpp    # Static tool registry
 │   │   │   └── DynamicToolRegistry.cpp/.hpp # MCP hot-swappable registry
-│   │   ├── memory/
-│   │   │   └── ContextBuffer.hpp  # Semispace ping-pong GC context window
 │   │   └── core/
 │   │       ├── Arena.hpp          # C++ RAII Arena wrapper
 │   │       ├── ThreadPool.hpp     # C++ ThreadPool wrapper
-│   │       └── SharedMemory.hpp   # C++ RAII SharedMemory wrapper
+│   │       ├── SharedMemory.hpp   # C++ RAII SharedMemory wrapper
+│   │       └── Telemetry.hpp      # C++ RAII Telemetry wrapper
 │   └── bindings/
-│       └── pybind_main.cpp        # Pybind11 module bindings
+│       └── pybind_main.cpp        # Pybind11 module bindings (v1.3.0)
 ├── python/
 │   └── coreagent/                 # High-Level Python Package
-│       ├── __init__.py            # Module exports (v1.2.0)
+│       ├── __init__.py            # Module exports (v1.3.0)
 │       ├── agent.py               # Python Agent class
 │       ├── shared_memory.py       # SharedMemory wrapper
 │       ├── mcp_client.py          # MCP async bridge over stdio
@@ -162,7 +180,7 @@ IronAgent/
 ├── tests/
 │   ├── c_tests/                   # C unit tests (test_c_core)
 │   ├── cpp_tests/                 # C++ engine unit tests (test_cpp_engine)
-│   └── python_tests/              # Pytest integration suite
+│   └── python_tests/              # Pytest integration suite (test_v12, test_v13)
 └── benchmarks/                    # Benchmark scripts (bench_vs_langchain, hot_loop)
 ```
 
@@ -212,54 +230,49 @@ result = agent.run("list the files in current directory")
 print("Result:", result)
 ```
 
-### Example 2: Multi-Agent Team with Native C Shared Memory
+### Example 2: Embedded SIMD Vector RAG Memory (`VectorBuffer`)
 ```python
-from coreagent import Agent, SharedMemory
+from coreagent import VectorBuffer
 
-# 1. Create a C-backed shared memory blackboard
-shm = SharedMemory()
-shm.write("target_file", "data.json", by="Orchestrator")
+# 1. Create a 4-dimensional vector memory
+vb = VectorBuffer(dim=4)
 
-# 2. Spawn worker agents and join the shared memory team
-worker1 = Agent(name="Worker1").join_team(shm)
-worker2 = Agent(name="Worker2").join_team(shm)
+# 2. Store embeddings with document text
+vb.push([1.0, 0.0, 0.0, 0.0], "CPU Architecture & Cache Alignment")
+vb.push([0.0, 1.0, 0.0, 0.0], "Database Index B-Trees")
 
-# 3. Workers read and write in parallel without GIL contention
-worker1.remember("file_size", "2048")
-print("Shared Memory Summary:")
-print(shm.summary())
+# 3. Top-K SIMD vector search
+matches = vb.query([0.95, 0.05, 0.0, 0.0], top_k=1)
+print("Best Match:", matches[0].text, "Score:", matches[0].score)
+
+# 4. Generate RAG prompt snippet
+print(vb.rag_context([0.95, 0.05, 0.0, 0.0], top_k=1))
 ```
 
-### Example 3: Injecting Custom Python Tools
+### Example 3: Lockless Event Ring Telemetry (`Telemetry`)
 ```python
-from coreagent import Agent, ToolInput, ToolOutput
+from coreagent import Telemetry, TelemetryKind
 
-agent = Agent()
+# Initialize lock-free telemetry ring
+telem = Telemetry(capacity=1024)
 
-@agent.tool("calculator", "Evaluate arithmetic expression. args='a + b'")
-def calculator(inp: ToolInput) -> ToolOutput:
-    out = ToolOutput()
-    try:
-        out.result = str(eval(inp.args))
-        out.success = True
-    except Exception as e:
-        out.success = False
-        out.error = str(e)
-    return out
+# Record events with nanosecond precision
+telem.emit(TelemetryKind.THINK, "AgentA", "analyzing_task")
+telem.emit(TelemetryKind.ACT,   "AgentA", "executing_tool")
 
-res = agent.tools.dispatch(ToolInput(name="calculator", args="12 * 4"))
-print("Result:", res.result)  # "48"
+# Export OpenTelemetry NDJSON logs to file
+telem.export_otel_to_file("telemetry.log")
 ```
 
 ---
 
-## 🗺️ Roadmap Ahead (V1.3.0)
+## 🗺️ Roadmap & Release History
 
 - [x] **V1.1.0:** Semispace arena compaction, zero-copy `memoryview`, lazy thread pool.
 - [x] **V1.2.0:** Dynamic AST Parsing (`OutputParser`), Dynamic MCP Tool Registry (`DynamicToolRegistry`), Native C Shared Memory (`ca_shm_t` with `pthread_rwlock_t`).
-- [ ] **V1.3.0 (Upcoming):**
-  - **Hierarchical C++ Swarm Orchestrator:** Async fan-out/fan-in worker delegation in C++.
-  - **Embedded SIMD Vector Memory (`VectorBuffer`):** AVX2/NEON vector search inside `ContextBuffer` for zero-dependency RAG.
+- [x] **V1.3.0 (Current):**
+  - **Hierarchical C++ Swarm Orchestrator (`SwarmOrchestrator`):** Async fan-out/fan-in worker delegation.
+  - **Embedded SIMD Vector Memory (`VectorBuffer`):** AVX2/NEON vector search inside `ContextBuffer`.
   - **Lockless Event Ring Telemetry (`ca_ringbuf_t`):** Microsecond tracing & OpenTelemetry export.
 
 ---

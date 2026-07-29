@@ -1,5 +1,5 @@
 """
-CoreAgent — Bare-Metal AI Agent Runtime
+CoreAgent — Bare-Metal AI Agent Runtime (v1.3.0)
 C + C++ + Python
 """
 
@@ -17,6 +17,12 @@ try:
         ParsedKind,
         ParsedResult,
         OutputParser,
+        VectorBuffer,
+        VectorMatch,
+        Telemetry,
+        TelemetryKind,
+        SwarmResult,
+        SwarmSummary,
         version,
         state_name,
     )
@@ -24,6 +30,12 @@ try:
 except ImportError as e:
     _BACKEND_AVAILABLE = False
     _IMPORT_ERROR = str(e)
+    VectorBuffer = None
+    VectorMatch = None
+    Telemetry = None
+    TelemetryKind = None
+    SwarmResult = None
+    SwarmSummary = None
 
 from .agent import Agent
 from .shared_memory import SharedMemory
@@ -34,7 +46,7 @@ from .tools import (
     http_get_tool,
 )
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __author__  = "CoreAgent Contributors"
 
 __all__ = [
@@ -51,6 +63,12 @@ __all__ = [
     "ParsedResult",
     "OutputParser",
     "SharedMemory",
+    "VectorBuffer",
+    "VectorMatch",
+    "Telemetry",
+    "TelemetryKind",
+    "SwarmResult",
+    "SwarmSummary",
     "shell_tool",
     "read_file_tool",
     "write_file_tool",

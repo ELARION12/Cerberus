@@ -25,6 +25,7 @@ public:
 
     uint64_t tasksCompleted() const { return ca_pool_tasks_completed(pool_); }
     uint32_t activeThreads()  const { return ca_pool_active_threads(pool_);  }
+    ca_thread_pool_t* raw_pool()    { return pool_; }
 
 private:
     ca_thread_pool_t* pool_ = nullptr;

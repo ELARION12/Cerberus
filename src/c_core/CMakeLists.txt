@@ -4,6 +4,7 @@ file(GLOB_RECURSE C_CORE_SOURCES
     "threading/*.c"
     "executor/*.c"
     "io/*.c"
+    "telemetry/*.c"
 )
 
 # Build as static library
@@ -14,6 +15,7 @@ target_include_directories(coreagent_c PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/threading
     ${CMAKE_CURRENT_SOURCE_DIR}/executor
     ${CMAKE_CURRENT_SOURCE_DIR}/io
+    ${CMAKE_CURRENT_SOURCE_DIR}/telemetry
 )
 
 target_link_libraries(coreagent_c PUBLIC Threads::Threads)

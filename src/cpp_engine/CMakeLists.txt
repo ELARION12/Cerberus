@@ -1,9 +1,10 @@
-# C++ Engine — Phase 2 & V1.2.0
+# C++ Engine — Phase 2, V1.2.0 & V1.3.0
 # Collect all C++ engine source files
 file(GLOB_RECURSE CPP_ENGINE_SOURCES
     "agent/*.cpp"
     "tools/*.cpp"
     "parser/*.cpp"
+    "swarm/*.cpp"
 )
 
 # Build as static library
@@ -17,6 +18,7 @@ target_include_directories(coreagent_cpp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/memory
     ${CMAKE_CURRENT_SOURCE_DIR}/core
     ${CMAKE_CURRENT_SOURCE_DIR}/parser
+    ${CMAKE_CURRENT_SOURCE_DIR}/swarm
 )
 
 # Link against C core (inherits its include dirs too)
