@@ -264,16 +264,41 @@ telem.emit(TelemetryKind.ACT,   "AgentA", "executing_tool")
 telem.export_otel_to_file("telemetry.log")
 ```
 
----
-
 ## 🗺️ Roadmap & Release History
 
+### 📜 Release History
 - [x] **V1.1.0:** Semispace arena compaction, zero-copy `memoryview`, lazy thread pool.
 - [x] **V1.2.0:** Dynamic AST Parsing (`OutputParser`), Dynamic MCP Tool Registry (`DynamicToolRegistry`), Native C Shared Memory (`ca_shm_t` with `pthread_rwlock_t`).
 - [x] **V1.3.0 (Current):**
   - **Hierarchical C++ Swarm Orchestrator (`SwarmOrchestrator`):** Async fan-out/fan-in worker delegation.
   - **Embedded SIMD Vector Memory (`VectorBuffer`):** AVX2/NEON vector search inside `ContextBuffer`.
   - **Lockless Event Ring Telemetry (`ca_ringbuf_t`):** Microsecond tracing & OpenTelemetry export.
+- [ ] **V1.4.0 (Upcoming Roadmap):**
+  - **Zero-Copy Paged KV-Cache Arenas:** Mmap / CUDA IPC integration between `ca_arena_t` and local LLM runtimes (`llama.cpp` / `vLLM`).
+  - **HNSW & Quantized SIMD Vector Memory:** Native C++ HNSW graph indexing and SQ8/Int8 quantization for `VectorBuffer`.
+  - **Kernel-Bypassing `io_uring` Network IPC:** Sub-microsecond distributed multi-agent inter-node communication.
+  - **Wasm Micro-Sandboxed Execution (`ca_wasm_t`):** Embedded WebAssembly runtime for secure zero-fork tool execution.
+
+### 🔮 Future Theoretical Roadmap
+
+```mermaid
+graph LR
+    v1_3["v1.3.0 (Current)<br/>SIMD Vector RAG & Lockless SPSC Ring"] --> v1_4["v1.4.0: Model & Memory Co-Design<br/>KV-Cache & HNSW Vector Indexing"]
+    v1_4 --> v1_5["v1.5.0: Distributed Swarms<br/>io_uring Network IPC & Raft Consensus"]
+    v1_5 --> v2_0["v2.0.0: Next-Gen Engine<br/>Wasm Micro-Sandboxes & Speculative Planning"]
+```
+
+#### 📍 **Phase 1: Model & Memory Co-Design (v1.4.0)**
+- [ ] **Zero-Copy Paged KV-Cache Arenas:** Mmap / CUDA IPC integration between `ca_arena_t` and local LLM runtimes (llama.cpp / vLLM) for zero-copy system prompt KV-cache sharing.
+- [ ] **HNSW & Quantized SIMD Vector Memory:** Upgrade `VectorBuffer` with native C++ HNSW graph indexing and SQ8/Int8 quantization for sub-millisecond similarity search across large embedding corpora.
+
+#### 📍 **Phase 2: Distributed Swarms & Network Systems (v1.5.0)**
+- [ ] **Kernel-Bypassing Network IPC (`io_uring`):** High-throughput, low-latency inter-agent distributed networking using Linux `io_uring` for sub-microsecond cross-node agent communication.
+- [ ] **Deterministic Replay & Raft Swarm Consensus:** Embedded C++ Raft protocol for swarm state consistency and instant differential memory arena snapshot replay.
+
+#### 📍 **Phase 3: Secure Execution & Speculative Engine (v2.0.0)**
+- [ ] **Wasm Micro-Sandboxed Tool Execution (`ca_wasm_t`):** Embed a zero-overhead WebAssembly runtime (Wasmtime/Wasmer C API) inside `ca_exec_t` for secure, zero-fork tool execution.
+- [ ] **Speculative Tree-of-Thought (ToT) Engine:** Multi-threaded parallel reasoning path evaluation where losing branch memory arenas are instantly reclaimed via $O(1)$ semispace arena resets.
 
 ---
 
