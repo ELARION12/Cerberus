@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090C10" />
+      <stop offset="50%" stop-color="#0D1117" />
+      <stop offset="100%" stop-color="#161B22" />
+    </linearGradient>
+    
+    <!-- Neon Glow Filters -->
+    <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Industrial Hexagon Background Pattern -->
+    <pattern id="hex" x="0" y="0" width="40" height="69.282" patternUnits="userSpaceOnUse">
+      <path d="M40 17.32l-20 11.547L0 17.32V-5.774l20-11.547L40-5.774V17.32zm0 46.188l-20 11.548-20-11.548V40.414L20 28.867l20 11.547v23.094z" fill="none" stroke="#21262d" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- Background Layer -->
+  <rect width="1280" height="320" fill="url(#bg)"/>
+  <rect width="1280" height="320" fill="url(#hex)" opacity="0.3"/>
+
+  <!-- Center Graphic Group -->
+  <g transform="translate(640, 110)">
+    <!-- Data Traces -->
+    <path d="M-350 0 L-100 0 L-60 -40 L-60 -80" fill="none" stroke="#30363d" stroke-width="2"/>
+    <path d="M350 0 L100 0 L60 -40 L60 -80" fill="none" stroke="#30363d" stroke-width="2"/>
+    <circle cx="-350" cy="0" r="4" fill="#58A6FF"/>
+    <circle cx="350" cy="0" r="4" fill="#58A6FF"/>
+
+    <!-- Central Core Logo -->
+    <polygon points="0,-50 43.3,-25 43.3,25 0,50 -43.3,25 -43.3,-25" fill="#0D1117" stroke="#58A6FF" stroke-width="3" filter="url(#glow-blue)"/>
+    <polygon points="0,-35 30.3,-17.5 30.3,17.5 0,35 -30.3,17.5 -30.3,-17.5" fill="none" stroke="#7EE787" stroke-width="2" filter="url(#glow-green)"/>
+    
+    <!-- Abstract 'A' / Anvil interior -->
+    <path d="M-15 10 L0 -15 L15 10" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M-10 2 L10 2" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Title -->
+  <text x="640" y="210" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="56" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="6">IRONAGENT</text>
+  
+  <!-- Subtitle -->
+  <text x="640" y="245" font-family="monospace" font-size="18" font-weight="500" fill="#8B949E" text-anchor="middle" letter-spacing="4">THE BARE-METAL AI ORCHESTRATOR</text>
+  
+  <!-- Performance Badges -->
+  <g transform="translate(425, 275)">
+    <rect x="0" y="0" width="130" height="26" rx="4" fill="#1f2428" stroke="#30363d" stroke-width="1"/>
+    <text x="65" y="17" font-family="monospace" font-size="12" font-weight="bold" fill="#7EE787" text-anchor="middle">412k OPS/SEC</text>
+  </g>
+  <g transform="translate(570, 275)">
+    <rect x="0" y="0" width="140" height="26" rx="4" fill="#1f2428" stroke="#30363d" stroke-width="1"/>
+    <text x="70" y="17" font-family="monospace" font-size="12" font-weight="bold" fill="#58A6FF" text-anchor="middle">ZERO-COPY FFI</text>
+  </g>
+  <g transform="translate(725, 275)">
+    <rect x="0" y="0" width="130" height="26" rx="4" fill="#1f2428" stroke="#30363d" stroke-width="1"/>
+    <text x="65" y="17" font-family="monospace" font-size="12" font-weight="bold" fill="#ff7b72" text-anchor="middle">AVX2 ALIGNED</text>
+  </g>
+</svg>
