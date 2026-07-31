@@ -7,7 +7,7 @@
 
 ## 📌 Overview
 
-**IronAgent** is a ultra-low overhead, production-grade AI agent runtime engineered in bare-metal **C11 and C++17**. Unlike conventional Python-only agent frameworks (LangChain, AutoGen) that consume 300MB+ RAM and suffer from Global Interpreter Lock (GIL) contention, IronAgent executes high-frequency reasoning loops (`Think ➔ Plan ➔ Act ➔ Reflect`) directly in compiled C++ at **270,000+ iterations/second** with a tiny **~14 MB RSS memory footprint**.
+**IronAgent** is an ultra-low overhead, production-grade AI agent runtime engineered in bare-metal **C11 and C++17**. Unlike conventional Python-only agent frameworks (LangChain, AutoGen) that consume 300MB+ RAM and suffer from Global Interpreter Lock (GIL) contention, IronAgent executes high-frequency reasoning loops (`Think ➔ Plan ➔ Act ➔ Reflect`) directly in compiled C++ at **270,000+ iterations/second** with a tiny **~14 MB RSS memory footprint**.
 
 ---
 
@@ -78,6 +78,8 @@ IronAgent/
 ├── LICENSE                     # MIT License
 ├── README.md                   # Technical documentation & usage guide
 ├── CHANGELOG.md                # Release history & version notes
+├── setup.py                    # Python package setup script
+├── requirements.txt            # Python dependencies
 ├── prompt.txt                  # Custom prompt ticket input file
 ├── run_prompt.py               # Custom prompt ticket executor script
 │
@@ -119,15 +121,20 @@ IronAgent/
 │   └── coreagent/
 │       ├── __init__.py         # Package exports & version definitions
 │       ├── agent.py            # High-level Python Agent class
+│       ├── cli.py              # CLI entry point
 │       ├── llm.py              # Ollama / Local LLM HTTP client
 │       ├── shared_memory.py    # Python SharedMemory wrapper
 │       ├── tools.py            # Default system tools (shell, read, write)
 │       ├── mcp_client.py       # MCP Tool Bridge client
 │       └── mcp_filesystem_server.py # Built-in MCP filesystem server
 │
+├── benchmarks/                 # Performance Benchmarking Suite
+│   ├── bench_main.cpp          # Native C++ hot-loop benchmark
+│   ├── bench_vs_langchain.py   # Latency comparison against LangChain
+│   └── hot_loop.py             # Python wrapper benchmark
+│
 ├── examples/                   # Usage Examples
-│   ├── test_local_llm.py       # Local LLM integration example
-│   └── run_prompt.py           # Ticket runner example
+│   └── test_local_llm.py       # Local LLM integration example
 │
 └── tests/                      # Suite of Unit & System Tests
     ├── c_tests/                # C11 core unit tests
@@ -185,7 +192,7 @@ python3 run_prompt.py
 ```
 
 ### Output & Logging
-* **Terminal Display**: Beautiful formatted execution trace showing model choices, tool calls, and results.
+* **Terminal Display**: Formatted execution trace showing model choices, tool calls, and results.
 * **Response Log**: Automatically saved to [`response.txt`](file:///home/elarion/Desktop/IronAgent/response.txt).
 
 ---
