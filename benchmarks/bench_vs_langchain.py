@@ -11,8 +11,8 @@ def get_memory_mb():
     # RUSAGE_SELF returns kilobytes on Linux
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
 
-def measure_coreagent():
-    print("=== CoreAgent Orchestration (Isolated) ===", flush=True)
+def measure_cerberus():
+    print("=== Cerberus AI Orchestration (Isolated) ===", flush=True)
     time.sleep(1.5)  # Pause for GIF recording
 
     gc.collect()
@@ -21,8 +21,8 @@ def measure_coreagent():
     # --- START BENCHMARK TIMER ---
     start_time = time.perf_counter()
 
-    from coreagent.agent import Agent
-    from coreagent._coreagent_cpp import AgentConfig
+    from cerberus.agent import Agent
+    from cerberus._coreagent_cpp import AgentConfig
 
     config = AgentConfig()
     config.context_arena_capacity = 1024 * 1024    
@@ -49,7 +49,7 @@ def measure_coreagent():
     print(f"Final Prompt Output   : {len(prompt)} bytes", flush=True)
     print("==========================================\n", flush=True)
     
-    time.sleep(2.0)  # Pause to let the viewer digest CoreAgent's score
+    time.sleep(2.0)  # Pause to let the viewer digest Cerberus score
 
 def measure_langchain():
     print("=== LangChain Orchestration (Isolated) ===", flush=True)
@@ -96,9 +96,9 @@ def measure_langchain():
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         import subprocess
-        subprocess.run([sys.executable, sys.argv[0], "--coreagent"])
+        subprocess.run([sys.executable, sys.argv[0], "--cerberus"])
         subprocess.run([sys.executable, sys.argv[0], "--langchain"])
-    elif sys.argv[1] == "--coreagent":
-        measure_coreagent()
+    elif sys.argv[1] == "--cerberus":
+        measure_cerberus()
     elif sys.argv[1] == "--langchain":
         measure_langchain()

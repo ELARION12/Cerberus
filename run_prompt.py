@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-IronAgent Custom Prompt Runner
-==============================
-Reads your custom prompt from 'prompt.txt', executes it through IronAgent
+Cerberus AI Custom Prompt Runner
+================================
+Reads your custom prompt from 'prompt.txt', executes it through Cerberus AI
 and your local LLM, and outputs the result cleanly.
 """
 
@@ -12,8 +12,8 @@ import os
 # Add python directory to module path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "python"))
 
-from coreagent import Agent
-from coreagent.llm import OllamaClient
+from cerberus import Agent
+from cerberus.llm import OllamaClient
 
 PROMPT_FILE = "prompt.txt"
 RESPONSE_FILE = "response.txt"
@@ -32,7 +32,7 @@ def main():
         return
 
     print("=" * 60)
-    print("🤖 IronAgent Custom Prompt Executor")
+    print("🐕 Cerberus AI Custom Prompt Executor")
     print("=" * 60)
     print(f"📄 Loaded Prompt from '{PROMPT_FILE}':")
     print(f"   \"{prompt_text}\"\n")
@@ -44,14 +44,14 @@ def main():
         print("Start it in another terminal with:  ollama serve")
         return
 
-    agent = Agent(name="CustomPromptAgent", llm_client=client)
+    agent = Agent(name="CerberusPromptAgent", llm_client=client)
 
     # Check if prompt asks for tool actions (create/write file, run shell, read file)
     action_keywords = ["write", "create", "make file", "run command", "shell", "read file", "list files", "mkdir"]
     is_action_prompt = any(kw in prompt_text.lower() for kw in action_keywords)
 
     if is_action_prompt:
-        print("🧠 Routing to Agent Tool Execution Engine...")
+        print("🧠 Routing to Cerberus C++ Tool Execution Engine...")
         output = agent.run_llm(prompt_text)
     else:
         print("🧠 Routing to Local LLM Direct Reasoning Engine...")

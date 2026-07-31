@@ -4,15 +4,15 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../python')))
 
-import coreagent
-from coreagent import KVCacheArena, VectorBuffer, __version__
+import cerberus
+from cerberus import KVCacheArena, VectorBuffer, __version__
 
 class TestV140Features(unittest.TestCase):
     def test_version(self):
         self.assertEqual(__version__, "1.4.0")
 
     def test_kv_cache_arena(self):
-        kv = KVCacheArena(100, "/ironagent_py_test_kv_")
+        kv = KVCacheArena(100, "/cerberus_py_test_kv_")
         self.assertEqual(kv.capacity_pages(), 100)
         self.assertEqual(kv.used_pages(), 0)
 

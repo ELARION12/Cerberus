@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 import os
 
 setup(
-    name             = "coreagent",
-    version          = "0.1.0",
-    author           = "CoreAgent Contributors",
-    description      = "Bare-Metal AI Agent Runtime — C + C++ + Python",
+    name             = "cerberus",
+    version          = "1.4.0",
+    author           = "Cerberus Contributors",
+    description      = "Cerberus AI — Bare-Metal Agent Engine (C11 + C++17 + Python3)",
     long_description = open("README.md").read() if os.path.exists("README.md") else "",
     packages         = find_packages(where="python"),
     package_dir      = {"": "python"},
@@ -18,7 +18,7 @@ setup(
     },
     entry_points = {
         "console_scripts": [
-            "coreagent=coreagent.cli:main",
+            "cerberus=cerberus.cli:main",
         ],
     },
     classifiers = [

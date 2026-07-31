@@ -1,6 +1,6 @@
 """
-CoreAgent — Bare-Metal AI Agent Runtime (v1.4.0)
-C + C++ + Python
+Cerberus AI — Bare-Metal Agent Engine (v1.4.0)
+3-Headed Architecture: C11 + C++17 + Python3
 """
 
 try:
@@ -51,7 +51,7 @@ from .tools import (
 )
 
 __version__ = "1.4.0"
-__author__  = "CoreAgent Contributors"
+__author__  = "Cerberus Contributors"
 
 __all__ = [
     "Agent",

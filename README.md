@@ -1,31 +1,33 @@
 <p align="center">
-  <img src="logo.svg" alt="IronAgent Logo" width="100%"/>
+  <img src="logo.svg" alt="Cerberus AI Logo" width="100%"/>
 </p>
 
-# ⚡ IronAgent — Bare-Metal AI Agent Engine
+# 🐕 Cerberus AI — 3-Headed Bare-Metal Agent Engine
 
 > **Version v1.4.0 (Model & Memory Co-Design)**  
-> *High-performance C11/C++17 native agent state machine, zero-copy paged KV-cache memory arenas, SQ8 quantized SIMD vector search, and HNSW graph indexing with Pybind11 Python bindings.*
+> *3-Headed Architecture: High-performance C11 bare-metal core, C++17 state machine & SIMD vector RAG, and Python3 API.*
 
 ---
 
 ## 📌 Overview
 
-**IronAgent** is an ultra-low overhead, production-grade AI agent runtime engineered in bare-metal **C11 and C++17**. Unlike conventional Python-only agent frameworks (LangChain, AutoGen) that consume 300MB+ RAM and suffer from Global Interpreter Lock (GIL) contention, IronAgent executes high-frequency reasoning loops (`Think ➔ Plan ➔ Act ➔ Reflect`) directly in compiled C++ at **270,000+ iterations/second** with a tiny **~14 MB RSS memory footprint**.
+**Cerberus AI** (or **Cerberus**) is an ultra-low overhead, production-grade AI agent runtime engineered from first principles around a **3-headed architecture (C11 + C++17 + Python3)**. 
+
+Unlike conventional Python-only agent frameworks (LangChain, AutoGen) that consume 300MB+ RAM and suffer from Global Interpreter Lock (GIL) contention, Cerberus executes high-frequency reasoning loops (`Think ➔ Plan ➔ Act ➔ Reflect`) directly in compiled C++ at **270,000+ iterations/second** with a tiny **~14 MB RSS memory footprint**.
 
 ---
 
-## 🌟 Key Architecture Pillars & v1.4.0 Innovations
+## 🌟 The 3-Headed Architecture
 
 ```mermaid
 graph TD
-    subgraph Layer3["🐍 Layer 3: Python API & Custom Prompt Engine"]
-        API["Python Wrapper (coreagent)"]
+    subgraph Head3["🐍 Head 3: Python3 API & Prompt Engine"]
+        API["Python Package (cerberus)"]
         Runner["Custom Prompt Runner (run_prompt.py)"]
         Pybind["Pybind11 C++ Bridge (_coreagent_cpp)"]
     end
 
-    subgraph Layer2["⚡ Layer 2: C++ Reasoning & Vector RAG Engine"]
+    subgraph Head2["⚡ Head 2: C++17 Reasoning & SIMD RAG Engine"]
         KVCache["KVCacheArena (Zero-Copy Paged Memory)"]
         HNSW["HNSWIndex (O(log N) Vector Search)"]
         SQ8["SQ8Quantizer (8-Bit SIMD Quantization)"]
@@ -34,7 +36,7 @@ graph TD
         Parser["OutputParser (Native AST Classification)"]
     end
 
-    subgraph Layer1["⚙️ Layer 1: Bare-Metal C Core"]
+    subgraph Head1["⚙️ Head 1: Bare-Metal C11 Core"]
         Arena["ca_arena_t (Semispace Ping-Pong Memory)"]
         SHM["ca_shm_t (pthread_rwlock_t Shared Memory)"]
         Ring["ca_ringbuf_t (Lockless SPSC Telemetry Ring)"]
@@ -76,19 +78,19 @@ graph TD
 ## 📂 Detailed Project Structure
 
 ```text
-IronAgent/
+Cerberus/
 ├── CMakeLists.txt              # Top-level CMake build configuration
 ├── Makefile                    # Standard Makefile wrapper
 ├── LICENSE                     # MIT License
 ├── README.md                   # Technical documentation & usage guide
 ├── CHANGELOG.md                # Release history & version notes
-├── setup.py                    # Python package setup script
+├── setup.py                    # Python package setup script (pip install cerberus)
 ├── requirements.txt            # Python dependencies
 ├── prompt.txt                  # Custom prompt ticket input file
 ├── run_prompt.py               # Custom prompt ticket executor script
 │
 ├── src/                        # Core Engine Source Code
-│   ├── c_core/                 # Layer 1: Bare-Metal C11 Core
+│   ├── c_core/                 # Head 1: Bare-Metal C11 Core
 │   │   ├── memory/
 │   │   │   ├── allocator.h/c   # ca_arena_t bump-pointer arena allocator
 │   │   │   └── shared_memory.h/c # ca_shm_t POSIX rwlock shared blackboard
@@ -99,7 +101,7 @@ IronAgent/
 │   │   └── telemetry/
 │   │       └── ringbuf.h/c     # ca_ringbuf_t lockless SPSC atomic ring buffer
 │   │
-│   ├── cpp_engine/             # Layer 2: C++17 State Machine & Memory Engines
+│   ├── cpp_engine/             # Head 2: C++17 State Machine & Memory Engines
 │   │   ├── memory/
 │   │   │   ├── KVCacheArena.hpp # Zero-copy paged KV-cache memory arena
 │   │   │   ├── SQ8Quantizer.hpp # 8-bit scalar vector quantization & SIMD math
@@ -118,14 +120,14 @@ IronAgent/
 │   │       ├── ToolRegistry.hpp # Tool dispatcher & execution registry
 │   │       └── DynamicToolRegistry.hpp/cpp # MCP tool hot-swapping registry
 │   │
-│   └── bindings/               # Layer 3: Python C Extensions
+│   └── bindings/               # Pybind11 C Extensions
 │       └── pybind_main.cpp     # Pybind11 module definition (_coreagent_cpp)
 │
-├── python/                     # Python High-Level Package
-│   └── coreagent/
+├── python/                     # Head 3: Python High-Level Package
+│   └── cerberus/               # Main Python package (import cerberus)
 │       ├── __init__.py         # Package exports & version definitions
 │       ├── agent.py            # High-level Python Agent class
-│       ├── cli.py              # CLI entry point
+│       ├── cli.py              # CLI entry point (cerberus command)
 │       ├── llm.py              # Ollama / Local LLM HTTP client
 │       ├── shared_memory.py    # Python SharedMemory wrapper
 │       ├── tools.py            # Default system tools (shell, read, write)
@@ -143,7 +145,7 @@ IronAgent/
 └── tests/                      # Suite of Unit & System Tests
     ├── c_tests/                # C11 core unit tests
     ├── cpp_tests/              # C++ engine unit tests (test_cpp_engine.cpp)
-    └── python_tests/           # Python unit tests (test_v140.py)
+    └── python_tests/           # Python unit tests (pytest / unittest)
 ```
 
 ---
@@ -158,8 +160,8 @@ IronAgent/
 
 ### 1. Clone & Build C++ Core Engine
 ```bash
-git clone https://github.com/your-username/IronAgent.git
-cd IronAgent
+git clone https://github.com/your-username/Cerberus.git
+cd Cerberus
 
 # Generate build files and compile release binary
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -175,14 +177,14 @@ cmake --build build --parallel
 pip install -e .
 
 # Or run Python unit test suite directly
-PYTHONPATH=build/src/bindings:python python3 -m unittest discover -s tests/python_tests
+PYTHONPATH=build/src/bindings:python pytest tests/python_tests
 ```
 
 ---
 
 ## 🚀 Running Custom Prompts & Tickets (`prompt.txt` & `run_prompt.py`)
 
-IronAgent includes a dedicated ticket runner that allows anyone forking the repository to execute custom prompts locally.
+Cerberus includes a dedicated ticket runner that allows anyone to execute custom prompts locally.
 
 ### Step 1: Type or Paste your prompt into `prompt.txt`
 ```text
@@ -194,10 +196,6 @@ what is the difference between C and C++?
 ```bash
 python3 run_prompt.py
 ```
-
-### Output & Logging
-* **Terminal Display**: Formatted execution trace showing model choices, tool calls, and results.
-* **Response Log**: Automatically saved to [`response.txt`](file:///home/elarion/Desktop/IronAgent/response.txt).
 
 ---
 
@@ -238,4 +236,4 @@ graph LR
 
 ## 📄 License
 
-IronAgent is distributed under the **MIT License**. See [`LICENSE`](file:///home/elarion/Desktop/IronAgent/LICENSE) for details.
+Cerberus is distributed under the **MIT License**. See [`LICENSE`](file:///home/elarion/Desktop/IronAgent/LICENSE) for details.

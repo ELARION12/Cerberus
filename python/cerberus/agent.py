@@ -62,7 +62,7 @@ class Agent:
 
     def __init__(
         self,
-        name:          str  = "CoreAgent",
+        name:          str  = "Cerberus",
         system_prompt: str  = "You are a fast, efficient AI agent.",
         max_tokens:    int  = 4096,
         num_threads:   int  = 4,

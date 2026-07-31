@@ -1,6 +1,6 @@
 """
 tests/python_tests/test_agent.py
-Python-layer tests for CoreAgent
+Python-layer tests for Cerberus
 """
 
 import sys
@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(__file__), "../../python"
 ))
 
-from coreagent import Agent, ToolInput, ToolOutput
+from cerberus import Agent, ToolInput, ToolOutput
 
 
 # ── Test 1: Agent Creation ────────────────────────────────
@@ -127,7 +127,7 @@ def test_agent_repr():
 # ── Main ──────────────────────────────────────────────────
 if __name__ == "__main__":
     print("╔══════════════════════════════════════════╗")
-    print("║  CoreAgent Python Layer Tests             ║")
+    print("║  Cerberus Python Layer Tests             ║")
     print("╚══════════════════════════════════════════╝")
 
     test_agent_creation()

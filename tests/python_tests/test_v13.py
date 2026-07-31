@@ -10,14 +10,14 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(__file__), "../../python"
 ))
 
-from coreagent import (
+from cerberus import (
     VectorBuffer, Telemetry, SwarmResult, SwarmSummary, version
 )
-from coreagent._coreagent_cpp import TelemetryKind
+from cerberus._coreagent_cpp import TelemetryKind
 
 
 def test_v13_version():
-    assert version() == "1.3.0"
+    assert version() == "1.4.0"
     print("\n✅ V1.3.0 Version PASSED")
 
 
