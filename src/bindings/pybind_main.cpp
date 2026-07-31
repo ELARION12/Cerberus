@@ -10,6 +10,9 @@
 #include "OutputParser.hpp"
 #include "SharedMemory.hpp"
 #include "VectorBuffer.hpp"
+#include "SQ8Quantizer.hpp"
+#include "HNSWIndex.hpp"
+#include "KVCacheArena.hpp"
 #include "Telemetry.hpp"
 #include "SwarmOrchestrator.hpp"
 
@@ -177,7 +180,27 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .value("CUSTOM",      CA_EVT_CUSTOM)
         .export_values();
 
-    /* ── V1.3.0 VectorBuffer (SIMD RAG Memory) ────────────────────────────── */
+    /* ── V1.4.0 KVCacheArena (Zero-Copy Paged KV-Cache Memory) ──────────── */
+    py::class_<PageBlock, std::shared_ptr<PageBlock>>(m, "PageBlock")
+        .def_readonly("block_id",    &PageBlock::block_id)
+        .def_readonly("page_count",  &PageBlock::page_count)
+        .def_readonly("size_bytes",  &PageBlock::size_bytes)
+        .def_readonly("shm_name",    &PageBlock::shm_name)
+        .def_readonly("prefix_hash", &PageBlock::prefix_hash)
+        .def("ref_count", [](const PageBlock& pb) { return pb.ref_count.load(); });
+
+    py::class_<KVCacheArena>(m, "KVCacheArena")
+        .def(py::init<size_t, std::string>(), py::arg("capacity_pages") = 1024, py::arg("shm_prefix") = "/ironagent_kv_")
+        .def("allocate_block", &KVCacheArena::allocateBlock, py::arg("token_prefix"), py::arg("min_bytes"))
+        .def("lookup_prefix",  &KVCacheArena::lookupPrefix,  py::arg("token_prefix"))
+        .def("release_block",  &KVCacheArena::releaseBlock,  py::arg("block_id"))
+        .def_static("hash_prefix", &KVCacheArena::hashPrefix, py::arg("tokens"))
+        .def("capacity_pages", &KVCacheArena::capacityPages)
+        .def("used_pages",     &KVCacheArena::usedPages)
+        .def("active_blocks",  &KVCacheArena::activeBlocks)
+        .def("bytes_used",     &KVCacheArena::bytesUsed);
+
+    /* ── V1.4.0 VectorBuffer & SQ8 / HNSW Upgrades ───────────────────────── */
     py::class_<VectorMatch>(m, "VectorMatch")
         .def(py::init<>())
         .def_readwrite("index", &VectorMatch::index)
@@ -191,16 +214,20 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
 
     py::class_<VectorBuffer>(m, "VectorBuffer")
         .def(py::init<uint32_t, uint32_t>(), py::arg("dim"), py::arg("max_vectors") = 4096)
-        .def("push",        &VectorBuffer::push, py::arg("embedding"), py::arg("text"))
-        .def("query",       &VectorBuffer::query, py::arg("embedding"), py::arg("top_k") = 5)
-        .def("rag_context", &VectorBuffer::ragContext, py::arg("query_vec"), py::arg("top_k") = 3)
-        .def("size",        &VectorBuffer::size)
-        .def("dim",         &VectorBuffer::dim)
-        .def("empty",       &VectorBuffer::empty)
-        .def("clear",       &VectorBuffer::clear)
-        .def("text",        &VectorBuffer::text)
-        .def("bytes_used",  &VectorBuffer::bytesUsed)
-        .def("print_stats", &VectorBuffer::printStats);
+        .def("enable_sq8",         &VectorBuffer::enableSQ8, py::arg("enable") = true)
+        .def("build_hnsw_index",   &VectorBuffer::buildHNSWIndex, py::arg("M") = 16, py::arg("ef_construction") = 64, py::arg("ef_search") = 32)
+        .def("has_hnsw",           &VectorBuffer::hasHNSW)
+        .def("is_sq8_enabled",     &VectorBuffer::isSQ8Enabled)
+        .def("push",               &VectorBuffer::push, py::arg("embedding"), py::arg("text"))
+        .def("query",              &VectorBuffer::query, py::arg("embedding"), py::arg("top_k") = 5)
+        .def("rag_context",        &VectorBuffer::ragContext, py::arg("query_vec"), py::arg("top_k") = 3)
+        .def("size",               &VectorBuffer::size)
+        .def("dim",                &VectorBuffer::dim)
+        .def("empty",              &VectorBuffer::empty)
+        .def("clear",              &VectorBuffer::clear)
+        .def("text",               &VectorBuffer::text)
+        .def("bytes_used",         &VectorBuffer::bytesUsed)
+        .def("print_stats",        &VectorBuffer::printStats);
 
     /* ── V1.3.0 Telemetry (Lockless Ring Buffer) ─────────────────────────── */
     py::class_<Telemetry>(m, "Telemetry")
@@ -268,6 +295,6 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
             return "<CoreAgent name='" + a.name() + "' state=" + a.stateName() + ">";
         });
 
-    m.def("version", []() { return "1.3.0"; });
+    m.def("version", []() { return "1.4.0"; });
     m.def("state_name", [](AgentState s) { return agentStateToString(s); });
 }

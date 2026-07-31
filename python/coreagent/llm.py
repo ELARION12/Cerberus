@@ -130,7 +130,7 @@ class OllamaClient:
         )
         prompt = f"{context}\n\nTask: {task}" if context else f"Task: {task}"
         result = self.generate(
-            prompt, system=system, temperature=0.1, format=self.PLAN_SCHEMA
+            prompt, system=system, temperature=0.1, format="json"
         )
 
         try:

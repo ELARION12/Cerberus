@@ -1,33 +1,14 @@
 #pragma once
 
 /*
- * VectorBuffer — Embedded SIMD Vector Memory for Zero-Dependency RAG
- * ===================================================================
+ * VectorBuffer — Embedded SIMD Vector Memory with SQ8 Quantization & HNSW Indexing
+ * =================================================================================
  * Stores fixed-dimension float32 embedding vectors together with a string
- * payload (e.g. a chunk of text) inside the existing ca_arena_t pool.
- * Similarity search is accelerated using AVX2 (x86-64) or NEON (ARM64)
- * intrinsics when the target supports them, with an automatic scalar
- * fallback so the code is always portable.
+ * payload (e.g. a chunk of text) inside memory.
  *
- * Key properties
- * ──────────────
- *  • Zero heap allocations after construction: every vector and its text
- *    are stored in a single arena allocation.
- *  • Cosine similarity computed with fused SIMD dot-product + norm.
- *  • top-k search returns indices + scores in O(N·D) time; N = stored
- *    vectors, D = dimension.  No indexing overhead for agent-scale N (<10k).
- *  • Thread-safe reads (no lock): all mutations must be done by the same
- *    thread that owns this VectorBuffer (matches ContextBuffer semantics).
- *  • Plugs into ContextBuffer::retrieve() to provide RAG without any
- *    external vector database.
- *
- * Usage (C++)
- * ───────────
- *   VectorBuffer vb(512);              // 512-dim embeddings
- *   vb.push({0.1f, 0.2f, …}, "chunk text");
- *   auto results = vb.query({…}, 3);  // top-3 nearest neighbours
- *   for (auto& r : results)
- *       std::cout << r.score << " → " << r.text << "\n";
+ * Upgrades in v1.4.0:
+ *  • SQ8 Scalar Quantization: 8-bit int quantization for 4x memory reduction.
+ *  • HNSW Graph Indexing: Native C++ HNSW graph for O(log N) fast top-k queries.
  */
 
 #include <vector>
@@ -39,6 +20,10 @@
 #include <cassert>
 #include <stdexcept>
 #include <cstdint>
+#include <memory>
+
+#include "SQ8Quantizer.hpp"
+#include "HNSWIndex.hpp"
 
 /* SIMD detection */
 #if defined(__AVX2__)
@@ -61,12 +46,8 @@ struct VectorMatch {
 /* ── VectorBuffer ─────────────────────────────────────────────────────────── */
 class VectorBuffer {
 public:
-    /*
-     * dim          — embedding dimension (must match vectors you push/query)
-     * max_vectors  — pre-reserved capacity (grows dynamically if exceeded)
-     */
     explicit VectorBuffer(uint32_t dim, uint32_t max_vectors = 4096)
-        : dim_(dim), capacity_(max_vectors)
+        : dim_(dim), capacity_(max_vectors), use_sq8_(false)
     {
         if (dim == 0)
             throw std::invalid_argument("[VectorBuffer] dim must be > 0");
@@ -74,13 +55,26 @@ public:
         texts_.reserve(max_vectors);
     }
 
-    /* ── Mutation ─────────────────────────────────────────────────────── */
+    void enableSQ8(bool enable = true) {
+        use_sq8_ = enable;
+        if (use_sq8_ && sq8_vectors_.size() < vectors_.size()) {
+            sq8_vectors_.resize(vectors_.size());
+            for (size_t i = 0; i < vectors_.size(); ++i) {
+                sq8_vectors_[i] = SQ8Quantizer::quantize(vectors_[i].data(), dim_);
+            }
+        }
+    }
 
-    /*
-     * push — Store a normalised copy of `embedding` with associated `text`.
-     * The embedding is L2-normalised on insertion so query time skips the
-     * per-vector norm division (dot product ≡ cosine similarity).
-     */
+    void buildHNSWIndex(uint32_t M = 16, uint32_t ef_construction = 64, uint32_t ef_search = 32) {
+        hnsw_index_ = std::make_unique<HNSWIndex>(dim_, M, ef_construction, ef_search);
+        for (uint32_t i = 0; i < vectors_.size(); ++i) {
+            hnsw_index_->insert(i, vectors_[i]);
+        }
+    }
+
+    bool hasHNSW() const { return hnsw_index_ != nullptr; }
+    bool isSQ8Enabled() const { return use_sq8_; }
+
     uint32_t push(const std::vector<float>& embedding, std::string_view text) {
         if ((uint32_t)embedding.size() != dim_) {
             throw std::invalid_argument(
@@ -93,40 +87,56 @@ public:
         l2_normalize(norm_vec.data(), dim_);
 
         uint32_t idx = (uint32_t)vectors_.size();
-        vectors_.push_back(std::move(norm_vec));
+        vectors_.push_back(norm_vec);
         texts_.emplace_back(text);
+
+        if (use_sq8_) {
+            sq8_vectors_.push_back(SQ8Quantizer::quantize(norm_vec.data(), dim_));
+        }
+
+        if (hnsw_index_) {
+            hnsw_index_->insert(idx, norm_vec);
+        }
+
         return idx;
     }
 
-    /* ── Query ────────────────────────────────────────────────────────── */
-
-    /*
-     * query — Return the top-k most similar stored vectors to `embedding`.
-     * `embedding` is normalised internally; no side-effects on the caller.
-     */
     std::vector<VectorMatch> query(const std::vector<float>& embedding,
                                    uint32_t top_k = 5) const
     {
         if ((uint32_t)embedding.size() != dim_) {
-            throw std::invalid_argument(
-                "[VectorBuffer] Query dimension mismatch");
+            throw std::invalid_argument("[VectorBuffer] Query dimension mismatch");
         }
         if (vectors_.empty()) return {};
 
-        /* Normalise query vector */
         std::vector<float> q = embedding;
         l2_normalize(q.data(), dim_);
+
+        if (hnsw_index_) {
+            auto hnsw_results = hnsw_index_->search(q, top_k, use_sq8_);
+            std::vector<VectorMatch> matches;
+            matches.reserve(hnsw_results.size());
+            for (const auto& res : hnsw_results) {
+                float sim = 1.0f - res.distance;
+                matches.push_back({res.id, sim, texts_[res.id]});
+            }
+            return matches;
+        }
 
         uint32_t n = (uint32_t)vectors_.size();
         std::vector<VectorMatch> matches;
         matches.reserve(n);
 
         for (uint32_t i = 0; i < n; ++i) {
-            float score = dot_simd(q.data(), vectors_[i].data(), dim_);
+            float score = 0.0f;
+            if (use_sq8_ && i < sq8_vectors_.size()) {
+                score = SQ8Quantizer::dot_product(q.data(), sq8_vectors_[i], dim_);
+            } else {
+                score = dot_simd(q.data(), vectors_[i].data(), dim_);
+            }
             matches.push_back({i, score, texts_[i]});
         }
 
-        /* Partial sort: top-k in O(N log k) */
         uint32_t k = std::min(top_k, n);
         std::partial_sort(
             matches.begin(),
@@ -140,11 +150,15 @@ public:
         return matches;
     }
 
-    /* ── Accessors ────────────────────────────────────────────────────── */
     uint32_t size()      const { return (uint32_t)vectors_.size(); }
     uint32_t dim()       const { return dim_; }
     bool     empty()     const { return vectors_.empty(); }
-    void     clear()     { vectors_.clear(); texts_.clear(); }
+    void     clear()     {
+        vectors_.clear();
+        sq8_vectors_.clear();
+        texts_.clear();
+        hnsw_index_.reset();
+    }
 
     std::string_view text(uint32_t idx) const {
         if (idx >= texts_.size())
@@ -152,7 +166,6 @@ public:
         return texts_[idx];
     }
 
-    /* Build a RAG context string from top-k results (injects into prompts) */
     std::string ragContext(const std::vector<float>& query_vec,
                            uint32_t top_k = 3) const
     {
@@ -169,15 +182,23 @@ public:
         return out;
     }
 
-    /* Memory usage estimate */
     size_t bytesUsed() const {
-        return vectors_.size() * dim_ * sizeof(float)
-             + texts_.size() * sizeof(std::string);  /* approx */
+        size_t bytes = vectors_.size() * dim_ * sizeof(float)
+                     + texts_.size() * sizeof(std::string);
+        if (use_sq8_) {
+            bytes += sq8_vectors_.size() * (dim_ * sizeof(uint8_t) + 2 * sizeof(float));
+        }
+        if (hnsw_index_) {
+            bytes += hnsw_index_->size() * sizeof(HNSWNode);
+        }
+        return bytes;
     }
 
     void printStats() const {
-        printf("[VectorBuffer] vectors=%u dim=%u bytes_approx=%zu SIMD=%s\n",
+        printf("[VectorBuffer] vectors=%u dim=%u bytes_approx=%zu SQ8=%s HNSW=%s SIMD=%s\n",
                size(), dim_, bytesUsed(),
+               use_sq8_ ? "enabled" : "disabled",
+               hnsw_index_ ? "enabled" : "disabled",
 #if defined(CA_SIMD_AVX2)
                "AVX2"
 #elif defined(CA_SIMD_NEON)
@@ -191,10 +212,13 @@ public:
 private:
     uint32_t dim_;
     uint32_t capacity_;
-    std::vector<std::vector<float>> vectors_;
-    std::vector<std::string>        texts_;
+    bool     use_sq8_;
 
-    /* ── SIMD dot product ─────────────────────────────────────────────── */
+    std::vector<std::vector<float>> vectors_;
+    std::vector<SQ8Vector>         sq8_vectors_;
+    std::vector<std::string>        texts_;
+    std::unique_ptr<HNSWIndex>      hnsw_index_;
+
     static float dot_simd(const float* __restrict__ a,
                           const float* __restrict__ b,
                           uint32_t n)
@@ -207,14 +231,12 @@ private:
             __m256 vb = _mm256_loadu_ps(b + i);
             acc = _mm256_fmadd_ps(va, vb, acc);
         }
-        /* Horizontal sum of 8 lanes */
         __m128 lo  = _mm256_castps256_ps128(acc);
         __m128 hi  = _mm256_extractf128_ps(acc, 1);
         __m128 sum = _mm_add_ps(lo, hi);
         sum = _mm_hadd_ps(sum, sum);
         sum = _mm_hadd_ps(sum, sum);
         float result = _mm_cvtss_f32(sum);
-        /* Scalar tail */
         for (; i < n; ++i) result += a[i] * b[i];
         return result;
 
@@ -237,11 +259,10 @@ private:
 #endif
     }
 
-    /* ── L2 normalisation (in-place) ──────────────────────────────────── */
     static void l2_normalize(float* v, uint32_t n) {
         float norm_sq = 0.0f;
         for (uint32_t i = 0; i < n; ++i) norm_sq += v[i] * v[i];
-        if (norm_sq < 1e-12f) return; /* zero-vector guard */
+        if (norm_sq < 1e-12f) return;
         float inv_norm = 1.0f / std::sqrt(norm_sq);
         for (uint32_t i = 0; i < n; ++i) v[i] *= inv_norm;
     }

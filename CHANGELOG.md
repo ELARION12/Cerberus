@@ -2,9 +2,24 @@
 
 All notable changes to the **IronAgent** framework are documented here.
 
+## 🚀 [v1.4.0] - 2026-07-31 (Latest Build)
+
+### 🌟 Major Highlights: Model & Memory Co-Design
+
+Version **v1.4.0** introduces **Zero-Copy Paged KV-Cache Arenas** and **SQ8 Quantized SIMD Vector Memory with HNSW Graph Indexing**.
+
+#### 1. 🧠 Zero-Copy Paged KV-Cache Arenas (`KVCacheArena`)
+- **Page-Aligned Memory Backing:** 4KB / 64KB page-aligned allocations using `mmap` and POSIX shared memory (`shm_open`) for zero-copy attention KV-cache sharing between local LLM runtimes (`llama.cpp`, `vLLM`) and IronAgent processes.
+- **Prefix Hash Table:** 64-bit FNV-1a token hash lookup for instant prompt prefix cache hits (0-ms prefix caching).
+- **Reference Counting & Pinning:** Thread-safe lock-free page reference counting to safely share KV blocks across concurrent worker agents.
+
+#### 2. ⚡ SQ8 Vector Quantization & HNSW Graph Indexing (`VectorBuffer` Upgrade)
+- **SQ8 8-Bit Scalar Quantization (`SQ8Quantizer`):** Compresses float32 vector embeddings to uint8 codes for 4x memory reduction with SIMD (AVX2 / NEON) integer dot-product calculation.
+- **Hierarchical Navigable Small World Index (`HNSWIndex`):** Native C++ graph index providing logarithmic time $O(\log N)$ top-k nearest neighbor vector search.
+
 ---
 
-## 🚀 [v1.3.0] - 2026-07-29 (Latest Build)
+## 🚀 [v1.3.0] - 2026-07-29
 
 ### 🌟 Major Highlights & System Architecture Expansion
 

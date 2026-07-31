@@ -6,6 +6,7 @@ Makefile
 cmake_install.cmake
 CTestTestfile.cmake
 _deps/
+bin/
 
 # Python caches and artifacts
 __pycache__/
@@ -14,6 +15,7 @@ __pycache__/
 *.pyd
 *.egg-info/
 .venv/
+venv/
 env/
 
 # Compiled C/C++ objects and libraries
@@ -23,13 +25,17 @@ env/
 *.dylib
 *.dll
 
-# Test executables
+# Test executables and logs
 tests/test_c_core
 tests/test_cpp_engine
+*.log
+response.txt
+demo_test.py
+hello_iron.py
 
 # Scratchpad testing scripts
 test_qwen.py
 
-# Personal files (not part of the project)
+# Personal files
 Portfolio.html
 Resume.pdf

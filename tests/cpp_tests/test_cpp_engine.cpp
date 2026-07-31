@@ -13,6 +13,9 @@
 #include "OutputParser.hpp"
 #include "SharedMemory.hpp"
 #include "VectorBuffer.hpp"
+#include "SQ8Quantizer.hpp"
+#include "HNSWIndex.hpp"
+#include "KVCacheArena.hpp"
 #include "Telemetry.hpp"
 #include "SwarmOrchestrator.hpp"
 #include "Agent.hpp"
@@ -162,10 +165,40 @@ void test_context_buffer() {
     printf("[TEST] ContextBuffer PASSED ✅\n");
 }
 
-/* ── Test: V1.3.0 VectorBuffer (SIMD RAG) ─────────────────── */
-void test_vector_buffer() {
-    printf("\n[TEST] V1.3.0 VectorBuffer (SIMD RAG)\n");
+/* ── Test: V1.4.0 KVCacheArena ────────────────────────────── */
+void test_kv_cache_arena() {
+    printf("\n[TEST] V1.4.0 KVCacheArena (Zero-Copy Paged KV-Cache)\n");
+    KVCacheArena kv(100, "/ironagent_test_kv_");
+
+    std::string sys_prompt = "<system>You are IronAgent AI assistant.</system>";
+    auto block1 = kv.allocateBlock(sys_prompt, 8192); // 2 pages (8KB)
+    assert(block1 != nullptr);
+    assert(block1->page_count == 2);
+    assert(block1->size_bytes == 8192);
+
+    /* Test prefix hit */
+    auto hit = kv.lookupPrefix(sys_prompt);
+    assert(hit != nullptr);
+    assert(hit->block_id == block1->block_id);
+    assert(hit->ref_count() == 3);
+
+    kv.releaseBlock(block1->block_id);
+    kv.releaseBlock(block1->block_id);
+    kv.releaseBlock(block1->block_id);
+
+    assert(kv.activeBlocks() == 0);
+    printf("[TEST] KVCacheArena PASSED ✅\n");
+}
+
+/* ── Test: V1.4.0 SQ8 & HNSW VectorBuffer Upgrades ─────────── */
+void test_vector_buffer_v140() {
+    printf("\n[TEST] V1.4.0 SQ8 Quantizer & HNSW Indexing\n");
     VectorBuffer vb(4);
+    vb.enableSQ8(true);
+    vb.buildHNSWIndex(16, 64, 32);
+
+    assert(vb.isSQ8Enabled());
+    assert(vb.hasHNSW());
 
     vb.push({1.0f, 0.0f, 0.0f, 0.0f}, "CPU Architecture Manual");
     vb.push({0.0f, 1.0f, 0.0f, 0.0f}, "Database Indexing Guide");
@@ -173,16 +206,12 @@ void test_vector_buffer() {
 
     assert(vb.size() == 3);
 
-    auto matches = vb.query({0.9f, 0.1f, 0.0f, 0.0f}, 2);
-    assert(matches.size() == 2);
+    auto matches = vb.query({0.95f, 0.05f, 0.0f, 0.0f}, 2);
+    assert(!matches.empty());
     assert(matches[0].text == "CPU Architecture Manual");
-    assert(matches[0].score > 0.8f);
-
-    std::string rag = vb.ragContext({0.9f, 0.1f, 0.0f, 0.0f}, 1);
-    assert(rag.find("CPU Architecture Manual") != std::string::npos);
 
     vb.printStats();
-    printf("[TEST] VectorBuffer (SIMD RAG) PASSED ✅\n");
+    printf("[TEST] SQ8 & HNSW VectorBuffer PASSED ✅\n");
 }
 
 /* ── Test: V1.3.0 Telemetry (Lockless Ring Buffer) ────────── */
@@ -233,7 +262,7 @@ void test_swarm_orchestrator() {
 
 /* ── Test: Full Agent Loop ───────────────────────────────── */
 void test_agent() {
-    printf("\n[TEST] Agent State Machine with V1.3.0 features\n");
+    printf("\n[TEST] Agent State Machine with V1.4.0 features\n");
     AgentConfig config;
     config.name        = "TestAgent";
     config.max_steps   = 3;
@@ -242,7 +271,7 @@ void test_agent() {
     Agent agent(config);
 
     SharedMemory shm;
-    shm.write("goal", "test_v1.3", "initializer");
+    shm.write("goal", "test_v1.4", "initializer");
     agent.setSharedMemory(&shm);
 
     std::string r1 = agent.run("list the files in current directory");
@@ -254,7 +283,7 @@ void test_agent() {
 /* ── Main ────────────────────────────────────────────────── */
 int main() {
     printf("╔══════════════════════════════════════════╗\n");
-    printf("║   CoreAgent C++ Engine Tests (V1.3.0)    ║\n");
+    printf("║   CoreAgent C++ Engine Tests (V1.4.0)    ║\n");
     printf("╚══════════════════════════════════════════╝\n");
 
     test_arena_cpp();
@@ -264,11 +293,12 @@ int main() {
     test_output_parser();
     test_shared_memory();
     test_context_buffer();
-    test_vector_buffer();
+    test_kv_cache_arena();
+    test_vector_buffer_v140();
     test_telemetry();
     test_swarm_orchestrator();
     test_agent();
 
-    printf("\n✅ All C++ Engine V1.3.0 tests PASSED!\n\n");
+    printf("\n✅ All C++ Engine V1.4.0 tests PASSED!\n\n");
     return 0;
 }

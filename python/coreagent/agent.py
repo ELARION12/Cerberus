@@ -70,6 +70,7 @@ class Agent:
         tool_timeout:  int  = 10000,
         load_defaults: bool = True,
         config:        Optional[AgentConfig] = None,
+        llm_client:    Optional[Any] = None,
     ):
         if config is None:
             config                = AgentConfig()
@@ -85,7 +86,7 @@ class Agent:
             config.name = name
 
         self._agent = _CppAgent(config)
-        self._llm   = None           # LLM client is loaded lazily on first use
+        self._llm   = llm_client     # Set LLM client if provided, or load lazily on first use
         self._tool_specs = dict(self.TOOL_SPECS)  # grows as MCP tools are added
         self._mcp_bridges: List[Any] = []
         self.inbox: List[AgentMessage] = []       # agent-to-agent message queue

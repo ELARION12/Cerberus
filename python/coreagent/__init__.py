@@ -1,5 +1,5 @@
 """
-CoreAgent — Bare-Metal AI Agent Runtime (v1.3.0)
+CoreAgent — Bare-Metal AI Agent Runtime (v1.4.0)
 C + C++ + Python
 """
 
@@ -19,6 +19,8 @@ try:
         OutputParser,
         VectorBuffer,
         VectorMatch,
+        KVCacheArena,
+        PageBlock,
         Telemetry,
         TelemetryKind,
         SwarmResult,
@@ -32,6 +34,8 @@ except ImportError as e:
     _IMPORT_ERROR = str(e)
     VectorBuffer = None
     VectorMatch = None
+    KVCacheArena = None
+    PageBlock = None
     Telemetry = None
     TelemetryKind = None
     SwarmResult = None
@@ -46,7 +50,7 @@ from .tools import (
     http_get_tool,
 )
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 __author__  = "CoreAgent Contributors"
 
 __all__ = [
@@ -65,6 +69,8 @@ __all__ = [
     "SharedMemory",
     "VectorBuffer",
     "VectorMatch",
+    "KVCacheArena",
+    "PageBlock",
     "Telemetry",
     "TelemetryKind",
     "SwarmResult",
