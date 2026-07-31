@@ -203,11 +203,18 @@ python3 run_prompt.py
 
 ## 🗺️ Release History & Next Roadmap
 
+> [!NOTE]
+> ### 🚀 Latest Release: `v1.4.0` (Model & Memory Co-Design)
+> * **Zero-Copy Paged KV-Cache Arenas (`KVCacheArena`)**: `mmap`/`shm` page memory allocations providing 0-ms token hash prefix caching.
+> * **SQ8 SIMD Vector Quantization (`SQ8Quantizer`)**: 8-bit scalar vector quantization for **4x RAM reduction** and AVX2/NEON SIMD math.
+> * **Native C++ HNSW Graph Index (`HNSWIndex`)**: Logarithmic time $O(\log N)$ approximate nearest neighbor search over document embeddings.
+> * **Custom Prompt Ticket Runner (`run_prompt.py`)**: Smart routing for action execution vs. direct local LLM reasoning.
+
 ### 📜 Release History
 - [x] **v1.1.0:** Semispace arena compaction, zero-copy `memoryview`, lazy thread pool.
 - [x] **v1.2.0:** Dynamic AST Parsing (`OutputParser`), Dynamic MCP Tool Registry (`DynamicToolRegistry`), Native C Shared Memory (`ca_shm_t`).
 - [x] **v1.3.0:** Hierarchical C++ Swarm Orchestrator (`SwarmOrchestrator`), Embedded SIMD Vector Memory (`VectorBuffer`), Lockless Event Ring Telemetry (`ca_ringbuf_t`).
-- [x] **v1.4.0 (Current):**
+- [x] **v1.4.0 (Latest Release):**
   - **Zero-Copy Paged KV-Cache Arenas (`KVCacheArena`):** `mmap` / POSIX `shm` page memory with 64-bit token hash prefix caching.
   - **SQ8 & HNSW Quantized Vector Memory:** 8-bit scalar vector quantization (`SQ8Quantizer`) for 4x memory compression and C++ HNSW graph indexing (`HNSWIndex`) for $O(\log N)$ vector search.
 
