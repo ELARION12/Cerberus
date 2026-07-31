@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="Cerberus AI Logo" width="100%"/>
+  <img src="logo.png?v=2" alt="Cerberus AI Logo" width="100%"/>
 </p>
 
 # Cerberus AI 3-Headed Bare-Metal Agent Engine
