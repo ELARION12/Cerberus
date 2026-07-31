@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.svg" alt="IronAgent Logo" width="100%"/>
+</p>
+
 # ⚡ IronAgent — Bare-Metal AI Agent Engine
 
 > **Version v1.4.0 (Model & Memory Co-Design)**  
