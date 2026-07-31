@@ -2,7 +2,7 @@
   <img src="logo.svg" alt="Cerberus AI Logo" width="100%"/>
 </p>
 
-# 🐕 Cerberus AI — 3-Headed Bare-Metal Agent Engine
+# Cerberus AI 3-Headed Bare-Metal Agent Engine
 
 > **Version v1.4.0 (Model & Memory Co-Design)**  
 > *3-Headed Architecture: High-performance C11 bare-metal core, C++17 state machine & SIMD vector RAG, and Python3 API.*
