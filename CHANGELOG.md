@@ -4,7 +4,7 @@ All notable changes to Geryon, which was called Cerberus until version 1.5.0. Ne
 
 ## [Unreleased]
 
-- Added a banner image to the top of the README (`assets/geryon-banner.png`).
+- Added a banner image (the name and a short description) to the top of the README (`assets/geryon-banner.png`). README tables are centered and the repeated name under the banner is gone.
 
 ## [v1.6.0] - 2026-11-09
 
