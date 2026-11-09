@@ -80,14 +80,11 @@ graph TD
 ```text
 Cerberus/
 ├── CMakeLists.txt              # Top-level CMake build configuration
-├── Makefile                    # Standard Makefile wrapper
 ├── LICENSE                     # MIT License
 ├── README.md                   # Technical documentation & usage guide
 ├── CHANGELOG.md                # Release history & version notes
 ├── setup.py                    # Python package setup script (pip install cerberus-agent)
 ├── requirements.txt            # Python dependencies
-├── prompt.txt                  # Custom prompt ticket input file
-├── run_prompt.py               # Custom prompt ticket executor script
 │
 ├── src/                        # Core Engine Source Code
 │   ├── c_core/                 # Head 1: Bare-Metal C11 Core
@@ -140,7 +137,9 @@ Cerberus/
 │   └── hot_loop.py             # Python wrapper benchmark
 │
 ├── examples/                   # Usage Examples
-│   └── test_local_llm.py       # Local LLM integration example
+│   ├── test_local_llm.py       # Local LLM integration example
+│   ├── run_prompt.py           # Prompt runner: reads prompt.txt, answers via a local Ollama model
+│   └── prompt.txt              # Input for run_prompt.py
 │
 └── tests/                      # Suite of Unit & System Tests
     ├── c_tests/                # C11 core unit tests
@@ -182,11 +181,11 @@ PYTHONPATH=build/src/bindings:python pytest tests/python_tests
 
 ---
 
-## 🚀 Running Custom Prompts & Tickets (`prompt.txt` & `run_prompt.py`)
+## 🚀 Running Custom Prompts & Tickets (`examples/prompt.txt` & `examples/run_prompt.py`)
 
 Cerberus includes a dedicated ticket runner that allows anyone to execute custom prompts locally.
 
-### Step 1: Type or Paste your prompt into `prompt.txt`
+### Step 1: Type or paste your prompt into `examples/prompt.txt`
 ```text
 what is the difference between C and C++?
 ```
@@ -194,7 +193,7 @@ what is the difference between C and C++?
 
 ### Step 2: Run the ticket runner
 ```bash
-python3 run_prompt.py
+python3 examples/run_prompt.py
 ```
 
 ---
@@ -206,7 +205,7 @@ python3 run_prompt.py
 > * **Zero-Copy Paged KV-Cache Arenas (`KVCacheArena`)**: `mmap`/`shm` page memory allocations providing 0-ms token hash prefix caching.
 > * **SQ8 SIMD Vector Quantization (`SQ8Quantizer`)**: 8-bit scalar vector quantization for **4x RAM reduction** and AVX2/NEON SIMD math.
 > * **Native C++ HNSW Graph Index (`HNSWIndex`)**: Logarithmic time $O(\log N)$ approximate nearest neighbor search over document embeddings.
-> * **Custom Prompt Ticket Runner (`run_prompt.py`)**: Smart routing for action execution vs. direct local LLM reasoning.
+> * **Custom Prompt Ticket Runner (`examples/run_prompt.py`)**: Smart routing for action execution vs. direct local LLM reasoning.
 
 ### 📜 Release History
 - [x] **v1.1.0:** Semispace arena compaction, zero-copy `memoryview`, lazy thread pool.

@@ -10,13 +10,13 @@ import sys
 import os
 
 # Add python directory to module path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "python"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../python"))
 
 from cerberus_agent import Agent
 from cerberus_agent.llm import OllamaClient
 
-PROMPT_FILE = "prompt.txt"
-RESPONSE_FILE = "response.txt"
+PROMPT_FILE = os.path.join(os.path.dirname(__file__), "prompt.txt")
+RESPONSE_FILE = os.path.join(os.path.dirname(__file__), "response.txt")
 
 def main():
     if not os.path.exists(PROMPT_FILE):
