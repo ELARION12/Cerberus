@@ -115,7 +115,33 @@ The two are the same to within noise: the model decides accuracy and almost all 
 
 When all 16 tasks share one running conversation instead, both loops fall to 23 of 64 correct and about 2.1 s per task. The 0.5B model cannot cope with unrelated earlier tasks piled into its prompt, and the prompt format makes it worse (see the status section).
 
-Not measured yet: other agent frameworks, long-run memory growth, and anything on a Raspberry Pi.
+**Against other agent frameworks** (`benchmarks/frameworks/`, raw output in [`benchmarks/results/`](benchmarks/results/)). The same local model (`qwen2.5:1.5b` through Ollama, CPU only, temperature 0), the same 22 tasks in three rounds, each framework in its own environment and used the way its documentation shows. A proxy times the model for all of them, so "overhead" is the time a task takes outside the model. One run on the laptop above, so treat it as preliminary.
+
+What a framework costs you, over all 22 tasks:
+
+| | start-up | memory (peak) | overhead per task | model calls per task | total time, 22 tasks |
+|---|---|---|---|---|---|
+| plain Python loop (control) | 0.0 s | 22 MB | 1.7 ms | 2.0 | 95 s |
+| **Cerberus** | **0.1 s** | **28 MB** | **2.6 ms** | 3.0 | 104 s |
+| LangChain 1.4.9 | 0.9 s | 82 MB | 12 ms | 2.0 | 96 s |
+| LlamaIndex 0.14.25 | 1.3 s | 163 MB | 33 ms | 2.0 | 97 s |
+| smolagents 1.26.0 | 1.0 s | 79 MB | 16 ms | 3.4 | 269 s |
+
+Against the three frameworks, Cerberus starts roughly 9 to 13 times faster, peaks at about a third to a sixth of their memory, and does about 5 to 13 times less work per task of its own. The total time is almost the same for all but smolagents, because the model takes nearly all of it. Cerberus does not make an agent finish faster.
+
+Score per round, correct answers out of the tasks:
+
+| | easy (8) | medium (8) | hard (6) | total (22) |
+|---|---|---|---|---|
+| plain Python loop | 8 | 4 | 2 | 14 |
+| **Cerberus** | 7 | 4 | 2 | 13 |
+| LangChain | 8 | 6 | 2 | 16 |
+| LlamaIndex | 8 | 6 | 2 | 16 |
+| smolagents | 8 | 5 | 1 | 14 |
+
+These scores are not a ranking. There are 22 tasks and the hard round has 6, so one task moves a score by about 17 points, and a gap of one or two tasks is noise. Cerberus was tuned on these tasks while it was being built and the others ran with their stock settings, which favours Cerberus. Cerberus is a little behind on the medium round. It asks the model for one tool per turn, so it needs more model calls (2.9 per medium task against 2.0), and a small model chains less reliably that way. Using Ollama's native tool calling in Cerberus is the next change to try. The limits of the comparison are written down in [`benchmarks/frameworks/README.md`](benchmarks/frameworks/README.md).
+
+Not measured yet: long-run memory growth, and anything on a Raspberry Pi.
 
 I have not run these on a Raspberry Pi yet. The ARM64 build is compiled and tested in CI, and Pi numbers will be added here when I have them.
 

@@ -1,0 +1,40 @@
+machine : Intel(R) Core(TM) i5-10310U CPU @ 1.70GHz, 8 threads, 11 GB RAM, no GPU
+model   : qwen2.5:1.5b via Ollama, CPU only; temperature 0, 4096 context, same settings for every framework
+limits  : 8 steps and 240 s per task; 2026-11-09
+versions: python 3.12.14, cerberus-agent 1.4.0, langchain 1.4.9, llama-index-core 0.14.25, smolagents 1.26.0
+
+ROUND: EASY  (8 tasks)
+  framework      score     %   s/task  overhead ms  model calls  tool calls  RSS MB  errors
+  plain           8/8   100%      2.3          1.6          2.0         1.0      23       0
+  cerberus        7/8    88%      2.8          1.8          2.0         1.0      30       0
+  langchain       8/8   100%      2.5          9.3          2.0         1.0      86       0
+  llamaindex      8/8   100%      2.6         26.9          2.0         1.0     171       0
+  smolagents      8/8   100%      6.9         19.6          3.8         1.8      82       0
+
+ROUND: MEDIUM  (8 tasks)
+  framework      score     %   s/task  overhead ms  model calls  tool calls  RSS MB  errors
+  plain           4/8    50%      4.4          1.7          2.0         1.9      23       0
+  cerberus        4/8    50%      4.4          2.6          2.9         1.9      30       0
+  langchain       6/8    75%      4.5         12.2          2.0         1.9      86       0
+  llamaindex      6/8    75%      4.4         32.6          2.0         1.9     171       0
+  smolagents      5/8    62%      6.4         15.7          3.1         3.1      82       0
+
+ROUND: HARD  (6 tasks)
+  framework      score     %   s/task  overhead ms  model calls  tool calls  RSS MB  errors
+  plain           2/6    33%      7.2          1.7          2.0         3.2      23       0
+  cerberus        2/6    33%      7.1          3.5          4.3         2.5      30       0
+  langchain       2/6    33%      6.9         13.9          2.0         3.2      86       0
+  llamaindex      2/6    33%      7.1         36.5          2.0         3.2     171       0
+  smolagents      1/6    17%      9.5         15.6          3.3         3.7      83       0
+
+OVERALL
+  framework       score  cold start s  RSS at start MB  peak RSS MB  total wall s
+  plain          14/22            0.0             20.0         21.7            95
+  cerberus       13/22            0.1             27.8         28.4           104
+  langchain      16/22            0.9             84.0         81.7            96
+  llamaindex     16/22            1.3            123.7        162.8            97
+  smolagents     14/22            1.0             79.5         78.6           269
+
+overhead ms = median time per task outside the model (the framework's own work). s/task includes the model.
+tool calls = how many tools actually ran per task. RSS MB = agent process memory at the end of the round.
+RSS = memory of the agent process only; the model runs in the Ollama server, the same for everyone.

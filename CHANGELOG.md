@@ -21,6 +21,8 @@ All notable changes to the **Cerberus** framework are documented here.
 - Added the first real-model results (qwen2.5:0.5b through Ollama) under `benchmarks/results/`.
 - The rendered prompt now labels every line with its role (`system:`, `user:`, `assistant:`, `tool <name>:`). It used to be a bare `[` per line with no role and no tool name. Anything that parsed the old format needs updating.
 - `run_llm()` gained `multi_step=True`: the model can call several tools in a row and ends the run with `final_answer`. The default behaviour is unchanged.
+- In multi-step mode a call the model repeats after it already succeeded ends the run with the last result. Small models tend to loop on one call instead of finishing.
+- Added `benchmarks/frameworks/`, a comparison of Cerberus with a plain loop, LangChain, LlamaIndex and smolagents on one local model, in three rounds (easy, medium, hard), with the first results.
 
 ---
 
