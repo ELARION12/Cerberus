@@ -1,6 +1,6 @@
 """
-Cerberus AI — Bare-Metal Agent Engine (v1.4.0)
-3-Headed Architecture: C11 + C++17 + Python3
+Cerberus - a lightweight agent framework for local models and small devices.
+C11 core, C++17 engine, Python API.
 """
 
 try:
@@ -53,7 +53,7 @@ from .tools import (
     http_get_tool,
 )
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 __author__  = "Arun Kumar"
 
 __all__ = [

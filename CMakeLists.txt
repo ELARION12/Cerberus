@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(Cerberus VERSION 1.4.0 LANGUAGES C CXX)
+project(Cerberus VERSION 1.5.0 LANGUAGES C CXX)
 
 # ── Standards ─────────────────────────────────────────────
 set(CMAKE_C_STANDARD 11)

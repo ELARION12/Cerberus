@@ -11,7 +11,8 @@ from cerberus_agent._cerberus_core import TelemetryKind
 
 
 def test_v13_version():
-    assert version() == "1.4.0"
+    import cerberus_agent
+    assert version() == cerberus_agent.__version__
     print("\n✅ V1.3.0 Version PASSED")
 
 

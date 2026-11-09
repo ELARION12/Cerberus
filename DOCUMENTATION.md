@@ -1,6 +1,6 @@
 # Cerberus design notes
 
-Version 1.4.0. These notes describe how the pieces fit together and what each one does today. For install steps and measured numbers see the [README](README.md).
+Version 1.5.0. These notes describe how the pieces fit together and what each one does today. For install steps and measured numbers see the [README](README.md).
 
 ## Layers
 
@@ -91,7 +91,7 @@ This is the allocator only. Nothing connects it to llama.cpp, vLLM or any other 
 `Agent.run_llm(task)` is the real loop. It puts the task in the context buffer, asks the model for a plan in the form `tool_name|arguments`, runs that tool, and puts the result in the context. There are two modes.
 
 - **Default (`multi_step=False`).** The first successful tool call ends the run and its output is returned. If a tool fails, the error is added to the context and the model is asked again, up to `max_steps` times.
-- **`multi_step=True`.** The model can call several tools one after another. Each call and result goes back into the conversation, and the model ends the run by calling `final_answer`, whose argument is returned. If the steps run out first, the last tool result is returned.
+- **`multi_step=True`.** The model can call several tools one after another. Each call and result goes back into the conversation, and the model ends the run by calling `final_answer`, whose argument is returned. If the steps run out first, or the model asks for a call that already succeeded, the run ends and the last tool result is returned.
 
 The model client is any object with `plan(task, tool_specs, context)` and `is_alive()`. `OllamaClient` is the one provided.
 
@@ -114,6 +114,7 @@ Progress messages are off by default. `CERBERUS_VERBOSE=1` or `cerberus_agent.se
 - **1.2.0**: Output parser, dynamic tool registry, shared memory with a read-write lock.
 - **1.3.0**: Swarm orchestrator, SIMD vector memory, telemetry ring.
 - **1.4.0**: KV-cache page pool, SQ8 codes, HNSW index.
+- **1.5.0**: Installable package (`pip install .`), CI on x86-64 and ARM64, run-time choice of AVX2 or NEON, role-labelled prompts, multi-step `run_llm()`, quiet by default, benchmarks that run, and corrected documentation.
 
 Changes since then are in [CHANGELOG.md](CHANGELOG.md).
 

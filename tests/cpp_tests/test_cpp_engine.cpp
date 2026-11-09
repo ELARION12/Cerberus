@@ -286,7 +286,7 @@ void test_agent() {
 /* ── Main ────────────────────────────────────────────────── */
 int main() {
     printf("╔══════════════════════════════════════════╗\n");
-    printf("║   Cerberus C++ Engine Tests (V1.4.0)    ║\n");
+    printf("║   Cerberus C++ Engine Tests            ║\n");
     printf("╚══════════════════════════════════════════╝\n");
 
     test_arena_cpp();
@@ -302,6 +302,6 @@ int main() {
     test_swarm_orchestrator();
     test_agent();
 
-    printf("\n✅ All C++ Engine V1.4.0 tests PASSED!\n\n");
+    printf("\n✅ All C++ engine tests PASSED!\n\n");
     return 0;
 }

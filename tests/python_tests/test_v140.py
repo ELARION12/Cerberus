@@ -5,7 +5,8 @@ from cerberus_agent import KVCacheArena, VectorBuffer, __version__
 
 class TestV140Features(unittest.TestCase):
     def test_version(self):
-        self.assertEqual(__version__, "1.4.0")
+        from cerberus_agent import version
+        self.assertEqual(__version__, version())
 
     def test_kv_cache_arena(self):
         kv = KVCacheArena(100, "/cerberus_py_test_kv_")

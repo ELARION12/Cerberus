@@ -1,13 +1,15 @@
-![Cerberus](https://raw.githubusercontent.com/ELARION12/Cerberus/main/logo.png)
-
-[![CI](https://github.com/ELARION12/Cerberus/actions/workflows/ci.yml/badge.svg)](https://github.com/ELARION12/Cerberus/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
 # Cerberus
 
-Cerberus is a small agent runtime written in C and C++ with a Python API. It keeps an agent's conversation context, tool registry and vector memory in native code, so the bookkeeping around a language model costs little time and memory. It is meant to run next to a local model (Ollama, llama.cpp) on small Linux machines.
+Cerberus is a lightweight agent framework for running tool-calling agents on local language models. A C11 core and a C++17 engine handle the conversation memory, tool dispatch and vector search, and a Python API sits on top. It is aimed at small Linux machines, such as a Raspberry Pi or a mini PC, where start-up time and memory matter.
 
-It does not run models and it does not make a model faster. It is also early: the core pieces work and are tested, some parts are rough, and the [status section](#status) lists what is not done.
+Latest release: v1.5.0. Build status: https://github.com/ELARION12/Cerberus/actions
+
+## What it is, and what it is not
+
+- **It is a framework.** It is a library you build agents with. You give it a model client and some tools, and it runs the loop in which the model picks a tool, the tool runs, and the result goes back into the conversation.
+- **It orchestrates one model and its tools.** It also has a thread-pool "swarm" for fanning sub-tasks out to several agents, and a shared board for them to read and write, but those parts are lightly tested.
+- **It is not a model runner.** The model runs somewhere else. The client that comes with Cerberus talks to Ollama, and any object with a `plan()` method can stand in for it. A llama.cpp client does not exist yet.
+- **It is not a replacement for the big frameworks.** There is no ecosystem of integrations, and only a few tools are built in. What it offers is a much smaller footprint, measured below.
 
 ## Install
 
@@ -57,7 +59,7 @@ memory.push([0.0, 1.0, 0.0], "dogs bark")
 print(memory.query([0.9, 0.1, 0.0], top_k=1)[0].text)                   # cats purr
 ```
 
-The same code is in [`examples/quickstart.py`](examples/quickstart.py). To use a real local model, swap the planner for `OllamaClient` as in [`examples/ollama_agent.py`](examples/ollama_agent.py).
+The same code is in [`examples/quickstart.py`](examples/quickstart.py). To use a real local model, swap the planner for `OllamaClient` as in [`examples/ollama_agent.py`](examples/ollama_agent.py). For a task that needs several tools in a row, call `agent.run_llm(task, multi_step=True)`.
 
 The library prints nothing by default. Set `CERBERUS_VERBOSE=1` or call `cerberus_agent.set_verbose(True)` to see what the agent is doing.
 
@@ -65,69 +67,51 @@ The library prints nothing by default. Set `CERBERUS_VERBOSE=1` or call `cerberu
 
 | Part | What it does | State |
 |---|---|---|
-| Context buffer | Keeps a rolling conversation inside a token budget, in arena memory that is compacted instead of grown. | Works, tested, benchmarked below. |
+| Context buffer | Keeps a rolling conversation inside a token budget, in arena memory that is compacted instead of grown. Each line is labelled with its role. | Works, tested, benchmarked below. |
 | Tools | Register Python functions as tools, or use the built-in shell and file tools. The registry can add and remove tools while the agent runs, which is how MCP servers are plugged in (needs the `mcp` extra). | The registry is tested. The MCP bridge is not covered by tests yet. |
 | Agent loop with a local model | `run_llm()` asks the model for a tool call, runs it, and returns the result. If the tool fails, the error goes back to the model for another try. With `multi_step=True` the model can chain several tools and finish with `final_answer`. | Works. The default is one tool call per task. |
 | Vector memory | Brute-force cosine search over stored embeddings with AVX2 or NEON kernels, chosen at run time. | Works. |
-| 8-bit vectors (SQ8) | Stores 8-bit codes next to the float vectors. | Does not save memory yet, see below. |
+| 8-bit vectors (SQ8) | Stores 8-bit codes next to the float vectors. | Does not save memory yet, see Status. |
 | HNSW index | Approximate nearest-neighbour graph. | Experimental: slow to build and low recall at the defaults. |
-| KV-cache pages | A shared-memory page pool with lookup by prompt-prefix hash. | The allocator works. There is no llama.cpp or vLLM integration yet. |
+| KV-cache pages | A shared-memory page pool with lookup by prompt-prefix hash. | The allocator works. There is no llama.cpp or vLLM integration. |
 | Swarm, telemetry, shared memory | Thread-pool fan-out of sub-tasks, a lock-free event ring that can write JSON log lines in a simplified OpenTelemetry format, a shared blackboard for agents. | Present, lightly tested. |
 
 `Agent.run()` without a model is a placeholder: it always plans `ls -la`. Use `run_llm()`.
 
+## Releases
+
+Details are in [CHANGELOG.md](CHANGELOG.md) and on the [Releases page](https://github.com/ELARION12/Cerberus/releases).
+
+| Version | Date | What it added |
+|---|---|---|
+| 1.5.0 | 2026-11-09 | Installable with `pip install .`. CI on x86-64 and ARM64. AVX2 or NEON chosen at run time, so a build runs on any CPU of its architecture. Multi-step `run_llm()`. Role-labelled prompts. Quiet by default. Benchmarks that run, including a comparison with other frameworks. Corrected documentation. The Python package is now `cerberus_agent`. |
+| 1.4.0 | 2026-07-31 | KV-cache page pool, SQ8 codes, HNSW index. |
+| 1.3.0 | 2026-07-29 | Swarm orchestrator, SIMD vector memory, telemetry ring. |
+| 1.2.0 | 2026-07-25 | Output parser, dynamic tool registry, shared memory with a read-write lock. |
+| 1.1.0 | 2026-07-21 | Semispace compaction in the context buffer, zero-copy hand-off to Python, lazily started thread pool. |
+| 1.0.0 | 2026-07-18 | C11 arena allocator, C++ agent loop, pybind11 bindings, Python wrapper. |
+
+The notes for 1.2.0 to 1.4.0 contained claims that did not hold up, such as a 4x memory saving from SQ8 and llama.cpp cache sharing. They now start with a correction.
+
 ## Numbers
 
-Measured on an Intel Core i5-10310U laptop (8 threads), Python 3.12, Linux. Run them yourself with the scripts in [`benchmarks/`](benchmarks/). Results move by about 30% between runs on this laptop.
+Measured on an Intel Core i5-10310U laptop (8 threads, 11 GB RAM, no GPU), Python 3.12, Linux. Run them yourself with the scripts in [`benchmarks/`](benchmarks/). Results move by about 20 to 30% between runs on this laptop, and every table below is a single pass.
 
-**Context handling** (`benchmarks/context_loop.py`). 50,000 iterations, each adding a user and an assistant message, trimming to a 16,384 character budget, and rendering the prompt every 10th time. Median of 3 runs, each in its own process.
+### Against other agent frameworks
 
-| | iterations/sec | memory used by `import` |
-|---|---|---|
-| Cerberus `ContextBuffer` | about 870,000 | about 9 MB |
-| Plain Python `deque` | about 185,000 | none |
-| `langchain_core` message objects | about 75,000 | about 27 MB |
-
-That is the cost of keeping the conversation, not of running an agent. Model calls take milliseconds to seconds each, so this part is small either way. It matters when many agents share one small machine, or when the machine has little memory.
-
-**Vector search** (`benchmarks/vector_query.py`). 5,000 clustered random vectors, 384 dimensions, top 5. The data is not real embeddings.
-
-| | ms per query | index size | top-5 matches exact |
-|---|---|---|---|
-| Cerberus, scalar code | 1.95 | 7.8 MB | 100% |
-| Cerberus, AVX2 | 0.51 | 7.8 MB | 100% |
-| Cerberus, SQ8 | 0.51 | 9.8 MB | 98% |
-| Cerberus, HNSW | 0.11 | 8.3 MB | 84% |
-| numpy matrix product (reference) | 0.3 to 0.5 | 7.7 MB | 100% |
-
-AVX2 is about 4 times faster than the scalar path. A plain numpy matrix product is about as fast as Cerberus, so the point here is not speed over numpy. It is doing the search inside the agent process with no numpy installed. HNSW answers in 0.1 ms but took 18 seconds to build and, at 20,000 vectors, found only about half of the true top 5. Do not rely on it yet.
-
-**Native code** (`bench_native`, build with `-DCERBERUS_BUILD_BENCHMARKS=ON`). One arena allocation takes about 2 ns, and adding a 100 character message to the context buffer about 75 ns.
-
-**With a real model, as a control** (`benchmarks/agent_e2e.py`, raw output in [`benchmarks/results/`](benchmarks/results/)). Ollama running `qwen2.5:0.5b` on the same laptop, 16 small tasks (word count, add, reverse, uppercase), 64 task runs per row. `run_llm()` is compared with a minimal Python loop that sends the model byte-identical prompts, so this shows whether the native layers add or cost anything. It is not a comparison with other agent frameworks.
-
-| | tasks correct | ms per task | time outside the model | agent process memory |
-|---|---|---|---|---|
-| Cerberus `run_llm()`, fresh context per task | 60 of 64 | 575 | 0.1 ms | 28.9 MB |
-| Plain Python loop, fresh context per task | 60 of 64 | 579 | 0.0 ms | 28.4 MB |
-
-The two are the same to within noise: the model decides accuracy and almost all of the time, and Cerberus adds about 0.1 ms per step. Cerberus runs inside Python, so the interpreter sets the floor for memory and Cerberus cannot go below plain Python on its own.
-
-When all 16 tasks share one running conversation instead, both loops fall to 23 of 64 correct and about 2.1 s per task. The 0.5B model cannot cope with unrelated earlier tasks piled into its prompt, and the prompt format makes it worse (see the status section).
-
-**Against other agent frameworks** (`benchmarks/frameworks/`, raw output in [`benchmarks/results/`](benchmarks/results/)). The same local model (`qwen2.5:1.5b` through Ollama, CPU only, temperature 0), the same 22 tasks in three rounds, each framework in its own environment and used the way its documentation shows. A proxy times the model for all of them, so "overhead" is the time a task takes outside the model. One run on the laptop above, so treat it as preliminary.
+[`benchmarks/frameworks/`](benchmarks/frameworks/) runs the same tasks through Cerberus and four others: a plain Python loop (a control), LangChain, LlamaIndex and smolagents. It uses one local model (`qwen2.5:1.5b` through Ollama, CPU only, temperature 0) and 22 tasks in three rounds. Each framework runs in its own environment and is used the way its documentation shows. A proxy times the model for all of them, so "overhead" is the time a task takes outside the model. Raw output is in [`benchmarks/results/`](benchmarks/results/).
 
 What a framework costs you, over all 22 tasks:
 
 | | start-up | memory (peak) | overhead per task | model calls per task | total time, 22 tasks |
 |---|---|---|---|---|---|
-| plain Python loop (control) | 0.0 s | 22 MB | 1.7 ms | 2.0 | 95 s |
-| **Cerberus** | **0.1 s** | **28 MB** | **2.6 ms** | 3.0 | 104 s |
-| LangChain 1.4.9 | 0.9 s | 82 MB | 12 ms | 2.0 | 96 s |
-| LlamaIndex 0.14.25 | 1.3 s | 163 MB | 33 ms | 2.0 | 97 s |
-| smolagents 1.26.0 | 1.0 s | 79 MB | 16 ms | 3.4 | 269 s |
+| plain Python loop (control) | 0.05 s | 22 MB | 1.7 ms | 2.0 | 95 s |
+| **Cerberus** | **0.09 s** | **28 MB** | **2.6 ms** | 3.0 | 104 s |
+| LangChain 1.4.9 | 0.91 s | 82 MB | 12 ms | 2.0 | 96 s |
+| LlamaIndex 0.14.25 | 1.34 s | 163 MB | 33 ms | 2.0 | 97 s |
+| smolagents 1.26.0 | 1.01 s | 79 MB | 16 ms | 3.4 | 269 s |
 
-Against the three frameworks, Cerberus starts roughly 9 to 13 times faster, peaks at about a third to a sixth of their memory, and does about 5 to 13 times less work per task of its own. The total time is almost the same for all but smolagents, because the model takes nearly all of it. Cerberus does not make an agent finish faster.
+Against LangChain, LlamaIndex and smolagents, Cerberus starts 10 to 15 times faster, peaks at about a third to a sixth of their memory, and does 5 to 13 times less work per task of its own. Total time is almost the same for all but smolagents, because the model takes nearly all of it. Cerberus does not make an agent finish faster.
 
 Score per round, correct answers out of the tasks:
 
@@ -139,11 +123,41 @@ Score per round, correct answers out of the tasks:
 | LlamaIndex | 8 | 6 | 2 | 16 |
 | smolagents | 8 | 5 | 1 | 14 |
 
-These scores are not a ranking. There are 22 tasks and the hard round has 6, so one task moves a score by about 17 points, and a gap of one or two tasks is noise. Cerberus was tuned on these tasks while it was being built and the others ran with their stock settings, which favours Cerberus. Cerberus is a little behind on the medium round. It asks the model for one tool per turn, so it needs more model calls (2.9 per medium task against 2.0), and a small model chains less reliably that way. Using Ollama's native tool calling in Cerberus is the next change to try. The limits of the comparison are written down in [`benchmarks/frameworks/README.md`](benchmarks/frameworks/README.md).
+These scores are not a ranking. There are 22 tasks and the hard round has 6, so one task moves a score by about 17 points, and a gap of one or two tasks is noise. Cerberus was tuned on these tasks while it was being built and the others ran with their stock settings, which favours Cerberus. It is a little behind on the medium round. It asks the model for one tool per turn, so it needs more model calls (2.9 per medium task against 2.0), and a small model chains less reliably that way. The limits of the comparison are written down in [`benchmarks/frameworks/README.md`](benchmarks/frameworks/README.md).
 
-Not measured yet: long-run memory growth, and anything on a Raspberry Pi.
+### Context handling
 
-I have not run these on a Raspberry Pi yet. The ARM64 build is compiled and tested in CI, and Pi numbers will be added here when I have them.
+[`benchmarks/context_loop.py`](benchmarks/context_loop.py): 50,000 iterations, each adding a user and an assistant message, trimming to a 16,384 character budget, and rendering the prompt every 10th time. Median of 3 runs, each in its own process.
+
+| | iterations/sec | memory used by `import` |
+|---|---|---|
+| Cerberus `ContextBuffer` | about 730,000 | about 11 MB |
+| Plain Python `deque` | about 165,000 | none |
+| `langchain_core` message objects | about 70,000 | about 28 MB |
+
+This is the cost of keeping the conversation, not of running an agent. Model calls take milliseconds to seconds each, so this part is small either way.
+
+### Vector search
+
+[`benchmarks/vector_query.py`](benchmarks/vector_query.py): 5,000 clustered random vectors, 384 dimensions, top 5. The data is not real embeddings.
+
+| | ms per query | index size | top-5 matches exact |
+|---|---|---|---|
+| Cerberus, scalar code | 1.9 | 7.8 MB | 100% |
+| Cerberus, AVX2 | 0.46 | 7.8 MB | 100% |
+| Cerberus, SQ8 | 0.50 | 9.8 MB | 98% |
+| Cerberus, HNSW | 0.12 | 8.3 MB | 84% |
+| numpy matrix product (reference) | 0.25 to 0.5 | 7.7 MB | 100% |
+
+AVX2 is about 4 times faster than the scalar path. numpy's matrix product is as fast as Cerberus or faster, so search speed is not an advantage over numpy. What Cerberus offers is search inside the agent process without installing numpy. HNSW answers in 0.1 ms but took 17 seconds to build and, at 20,000 vectors, found only about half of the true top 5. Do not rely on it yet.
+
+### Native code
+
+`bench_native`, built with `-DCERBERUS_BUILD_BENCHMARKS=ON`: one arena allocation takes 2 to 3 ns, and adding a 100 character message to the context buffer about 70 to 80 ns.
+
+### Not measured yet
+
+Anything on a Raspberry Pi, and long-run memory growth. Pi results will be added here when they exist.
 
 ## How it is built
 
@@ -156,6 +170,8 @@ C11 core              src/c_core                 arena allocator, thread pool, p
 The C core has no dependencies beyond the C library and pthreads. The C++ engine is mostly header-only. pybind11 joins the engine to Python as `_cerberus_core`.
 
 The build does not use `-march=native`, so a binary runs on any CPU of its architecture. The AVX2 kernels (x86-64) are compiled in and used only if the CPU reports AVX2 and FMA. On 64-bit ARM the NEON kernels are always used. `cerberus_agent.simd_backend()` says which one is active, and `CERBERUS_SIMD=scalar` forces the plain path.
+
+CI builds and tests it on every push to `main` and every pull request, on x86-64 and on 64-bit ARM. The ARM job fails unless the NEON kernels are the ones running, and they have run there on GitHub's ARM64 machines. They have not run on a Raspberry Pi yet.
 
 ## Development
 
@@ -177,13 +193,12 @@ Known problems:
 
 - SQ8 keeps the float vectors as well as the 8-bit codes, so it uses 25% more memory than plain float32 instead of a quarter of it.
 - HNSW is slow to build and has low recall at its defaults.
+- Cerberus asks the model for one tool per turn. Frameworks that use the model's native tool calling can ask for several at once, so they need fewer model calls on multi-step tasks. Using native tool calling in Cerberus is the next thing to try.
 - The built-in `shell` tool runs whatever command the model picks, with your permissions and no sandbox. Remove it with `agent.tools.remove_tool("shell")` if you do not want that.
-- The NEON code has been compiled and is tested in CI on ARM64, but has not run on real hardware by me yet.
-- Not published to PyPI.
+- The NEON code has run in CI on ARM64 but not on a Raspberry Pi.
+- Linux only. Not published to PyPI.
 
-Ideas, none started: a llama.cpp adapter for the KV-cache pages, an OpenAI-compatible client, network transport between agents, and sandboxed tool execution.
-
-See [CHANGELOG.md](CHANGELOG.md) for what changed in each version and [DOCUMENTATION.md](DOCUMENTATION.md) for the design notes.
+Ideas, none started: a memory budget setting that sizes an agent's arenas from one number, a llama.cpp adapter for the KV-cache pages, native tool calling, a Raspberry Pi benchmark page, and sandboxed tool execution.
 
 ## License
 

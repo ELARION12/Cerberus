@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "cerberus-agent"
 dynamic = ["version"]
-description = "Small agent runtime: C11 core, C++17 engine, Python API"
+description = "Lightweight agent framework for local LLMs on small devices: C11 core, C++17 engine, Python API"
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Arun Kumar" }]
