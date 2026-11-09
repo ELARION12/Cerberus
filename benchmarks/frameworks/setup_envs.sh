@@ -12,14 +12,14 @@ PY="${BENCH_PYTHON:-3.12}"
 
 declare -A PACKAGES=(
   [plain]=""
-  [cerberus]="$ROOT"
+  [geryon]="$ROOT"
   [langchain]="langchain langchain-ollama langgraph"
   [llamaindex]="llama-index-core llama-index-llms-ollama"
   [smolagents]="smolagents[openai]"
 )
 
 want=("$@")
-[ ${#want[@]} -eq 0 ] && want=(plain cerberus langchain llamaindex smolagents)
+[ ${#want[@]} -eq 0 ] && want=(plain geryon langchain llamaindex smolagents)
 
 for name in "${want[@]}"; do
   dir="$ENVS/$name"
@@ -27,7 +27,7 @@ for name in "${want[@]}"; do
   [ -x "$dir/bin/python" ] || uv venv "$dir" --python "$PY" --managed-python -q
   if [ -n "${PACKAGES[$name]}" ]; then
     extra=""
-    [ "$name" = "cerberus" ] && extra="--reinstall-package cerberus-agent"   # always rebuild from this checkout
+    [ "$name" = "geryon" ] && extra="--reinstall-package geryon"   # always rebuild from this checkout
     # shellcheck disable=SC2086
     uv pip install --python "$dir/bin/python" -q $extra ${PACKAGES[$name]}
   fi

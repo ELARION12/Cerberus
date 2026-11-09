@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(Cerberus VERSION 1.5.0 LANGUAGES C CXX)
+project(Geryon VERSION 1.6.0 LANGUAGES C CXX)
 
 # ── Standards ─────────────────────────────────────────────
 set(CMAKE_C_STANDARD 11)
@@ -14,16 +14,16 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # ── Options ────────────────────────────────────────────────
-option(CERBERUS_BUILD_TESTS "Build the C and C++ test programs" ON)
-option(CERBERUS_BUILD_BENCHMARKS "Build the native benchmark program" OFF)
-option(CERBERUS_NATIVE_ARCH "Tune for this machine with -march=native (never for builds you ship)" OFF)
+option(GERYON_BUILD_TESTS "Build the C and C++ test programs" ON)
+option(GERYON_BUILD_BENCHMARKS "Build the native benchmark program" OFF)
+option(GERYON_NATIVE_ARCH "Tune for this machine with -march=native (never for builds you ship)" OFF)
 
 # ── Compiler Flags ─────────────────────────────────────────
 # No -march here: the build must run on any CPU of its architecture. AVX2 and
 # NEON kernels are picked at run time instead (see src/cpp_engine/core/Simd.hpp).
 set(CMAKE_C_FLAGS_RELEASE   "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-if(CERBERUS_NATIVE_ARCH)
+if(GERYON_NATIVE_ARCH)
   add_compile_options(-march=native)
 endif()
 set(CMAKE_C_FLAGS_DEBUG     "-g -fsanitize=address -Wall -Wextra")
@@ -34,7 +34,7 @@ find_package(Threads REQUIRED)
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
 # shm_open lives in librt on older glibc (manylinux2014); newer glibc has it in libc
-find_library(CERBERUS_RT_LIB rt)
+find_library(GERYON_RT_LIB rt)
 
 # ── pybind11: use an installed copy, download one only if none is found ──
 find_package(pybind11 CONFIG QUIET)
@@ -54,16 +54,16 @@ add_subdirectory(src/cpp_engine)
 add_subdirectory(src/bindings)
 
 # ── Benchmarks ─────────────────────────────────────────────
-if(CERBERUS_BUILD_BENCHMARKS)
+if(GERYON_BUILD_BENCHMARKS)
   add_subdirectory(benchmarks)
 endif()
 
 # ── Tests ──────────────────────────────────────────────────
-if(CERBERUS_BUILD_TESTS)
+if(GERYON_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
 
-message(STATUS "✅ Cerberus configured: ${CMAKE_BUILD_TYPE}")
+message(STATUS "✅ Geryon configured: ${CMAKE_BUILD_TYPE}")
 message(STATUS "   C compiler  : ${CMAKE_C_COMPILER}")
 message(STATUS "   C++ compiler: ${CMAKE_CXX_COMPILER}")

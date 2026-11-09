@@ -64,7 +64,7 @@ extern "C" {
     #include "thread_pool.h"
 }
 
-namespace cerberus {
+namespace geryon {
 
 /* ── Per-worker result ──────────────────────────────────────────────────── */
 struct SwarmResult {
@@ -275,4 +275,4 @@ private:
     }
 };
 
-} // namespace cerberus
+} // namespace geryon

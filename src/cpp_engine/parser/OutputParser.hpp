@@ -7,7 +7,7 @@ extern "C" {
     #include "allocator.h"
 }
 
-namespace cerberus {
+namespace geryon {
 
 /* Detected format of a tool's output string. */
 enum class ParsedKind {
@@ -69,4 +69,4 @@ private:
     static std::string_view arenaStr(ca_arena_t* arena, std::string_view sv);
 };
 
-} // namespace cerberus
+} // namespace geryon

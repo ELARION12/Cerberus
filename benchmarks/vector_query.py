@@ -5,7 +5,7 @@ Reports time per query, index size in memory, and how often the top 5 matches
 the exact float32 answer ("recall"). The data is clustered random vectors, not
 real embeddings, so treat the recall of the 8-bit index as a rough guide.
 
-numpy is only used as a reference if it is installed. Cerberus does not need it.
+numpy is only used as a reference if it is installed. Geryon does not need it.
 
     python benchmarks/vector_query.py
     python benchmarks/vector_query.py --vectors 20000 --dim 768
@@ -37,18 +37,18 @@ def make_data(n, dim, queries, seed=1):
     return rows, qs
 
 
-def load_cerberus():
+def load_geryon():
     """Use the installed package if there is one, else the source tree."""
     try:
-        import cerberus_agent as ca
+        import geryon as ca
         if ca._BACKEND_AVAILABLE:
             return ca
     except ImportError:
         pass
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "python"))
-    for name in [m for m in sys.modules if m.startswith("cerberus_agent")]:
+    for name in [m for m in sys.modules if m.startswith("geryon")]:
         del sys.modules[name]
-    import cerberus_agent as ca
+    import geryon as ca
     return ca
 
 
@@ -65,22 +65,22 @@ def timed(fn, qs):
 
 def child(impl, n, dim, nq):
     rows, qs = make_data(n, dim, nq)
-    if impl.startswith("cerberus"):
-        ca = load_cerberus()
+    if impl.startswith("geryon"):
+        ca = load_geryon()
 
         vb = ca.VectorBuffer(dim=dim, max_vectors=n)
-        if impl == "cerberus-sq8":
+        if impl == "geryon-sq8":
             vb.enable_sq8(True)
         for r in rows:
             vb.push(r, "")
-        if impl == "cerberus-hnsw":
+        if impl == "geryon-hnsw":
             t0 = time.perf_counter()
             vb.build_hnsw_index()
             build_s = time.perf_counter() - t0
         ms = timed(lambda q: vb.query(q, top_k=TOP_K), qs)
         tops = [[m.index for m in vb.query(q, top_k=TOP_K)] for q in qs]
         extra = {"backend": ca.simd_backend(), "index_mb": vb.bytes_used() / 1e6}
-        if impl == "cerberus-hnsw":
+        if impl == "geryon-hnsw":
             extra["build_s"] = build_s
     else:
         import numpy as np
@@ -103,7 +103,7 @@ def child(impl, n, dim, nq):
 
 def run_child(impl, args, env_extra=None):
     env = dict(os.environ)
-    env.pop("CERBERUS_SIMD", None)
+    env.pop("GERYON_SIMD", None)
     env.update(env_extra or {})
     out = subprocess.run(
         [sys.executable, os.path.abspath(__file__), "--child", impl,
@@ -139,10 +139,10 @@ def main():
     print(f"workload: {args.vectors} vectors x {args.dim} dims, {args.queries} queries, top {TOP_K}\n")
 
     plan = [
-        ("cerberus f32, scalar", "cerberus-f32", {"CERBERUS_SIMD": "scalar"}),
-        ("cerberus f32", "cerberus-f32", {}),
-        ("cerberus sq8", "cerberus-sq8", {}),
-        ("cerberus hnsw", "cerberus-hnsw", {}),
+        ("geryon f32, scalar", "geryon-f32", {"GERYON_SIMD": "scalar"}),
+        ("geryon f32", "geryon-f32", {}),
+        ("geryon sq8", "geryon-sq8", {}),
+        ("geryon hnsw", "geryon-hnsw", {}),
     ]
     try:
         import numpy  # noqa: F401

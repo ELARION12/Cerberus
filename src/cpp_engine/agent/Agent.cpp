@@ -8,7 +8,7 @@
 #include <fstream>
 #include <sstream>
 
-namespace cerberus {
+namespace geryon {
 
 Agent::Agent(const AgentConfig& config)
     : config_(config),
@@ -242,4 +242,4 @@ std::string Agent::run(const std::string& task) {
     return final_output;
 }
 
-} // namespace cerberus
+} // namespace geryon

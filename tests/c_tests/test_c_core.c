@@ -23,9 +23,9 @@ void test_arena() {
     assert(buf != NULL);
     for (int i = 0; i < 64; i++) assert(buf[i] == 0);
 
-    char* str = ca_arena_strdup(arena, "Cerberus rocks!");
+    char* str = ca_arena_strdup(arena, "Geryon rocks!");
     assert(str != NULL);
-    assert(strcmp(str, "Cerberus rocks!") == 0);
+    assert(strcmp(str, "Geryon rocks!") == 0);
 
     ca_arena_mark_t mark = ca_arena_save(arena);
     void* tmp = ca_arena_alloc(arena, 512);
@@ -75,11 +75,11 @@ void test_thread_pool() {
 void test_executor() {
     printf("\n[TEST] Process Executor\n");
 
-    ca_exec_result_t r1 = ca_exec_shell("echo 'Hello Cerberus'", 2000);
+    ca_exec_result_t r1 = ca_exec_shell("echo 'Hello Geryon'", 2000);
     assert(r1.status    == CA_EXEC_OK);
     assert(r1.exit_code == 0);
     assert(r1.stdout_data != NULL);
-    assert(strstr(r1.stdout_data, "Hello Cerberus") != NULL);
+    assert(strstr(r1.stdout_data, "Hello Geryon") != NULL);
     ca_exec_result_free(&r1);
 
     ca_exec_result_t r2 = ca_exec_shell("exit 42", 2000);
@@ -128,7 +128,7 @@ void test_ringbuf() {
 /* ── Main ────────────────────────────────────────────────── */
 int main(void) {
     printf("╔══════════════════════════════════════╗\n");
-    printf("║   Cerberus C Core Tests              ║\n");
+    printf("║   Geryon C Core Tests              ║\n");
     printf("╚══════════════════════════════════════╝\n");
 
     test_arena();

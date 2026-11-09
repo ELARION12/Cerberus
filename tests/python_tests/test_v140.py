@@ -1,15 +1,15 @@
 import unittest
 
-import cerberus_agent
-from cerberus_agent import KVCacheArena, VectorBuffer, __version__
+import geryon
+from geryon import KVCacheArena, VectorBuffer, __version__
 
 class TestV140Features(unittest.TestCase):
     def test_version(self):
-        from cerberus_agent import version
+        from geryon import version
         self.assertEqual(__version__, version())
 
     def test_kv_cache_arena(self):
-        kv = KVCacheArena(100, "/cerberus_py_test_kv_")
+        kv = KVCacheArena(100, "/geryon_py_test_kv_")
         self.assertEqual(kv.capacity_pages(), 100)
         self.assertEqual(kv.used_pages(), 0)
 

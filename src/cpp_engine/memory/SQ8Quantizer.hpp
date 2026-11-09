@@ -18,7 +18,7 @@
 
 #include "../core/Simd.hpp"
 
-namespace cerberus {
+namespace geryon {
 
 struct SQ8Vector {
     std::vector<uint8_t> codes;
@@ -177,4 +177,4 @@ private:
 #endif
 };
 
-} // namespace cerberus
+} // namespace geryon

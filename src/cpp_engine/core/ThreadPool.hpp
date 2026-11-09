@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <cstdint>
 
-namespace cerberus {
+namespace geryon {
 
 class ThreadPool {
 public:
@@ -31,4 +31,4 @@ private:
     ca_thread_pool_t* pool_ = nullptr;
 };
 
-} // namespace cerberus
+} // namespace geryon

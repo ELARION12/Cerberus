@@ -27,7 +27,7 @@
 
 #include "../core/Simd.hpp"
 
-namespace cerberus {
+namespace geryon {
 
 /* ── Result of a nearest-neighbour query ─────────────────────────────────── */
 struct VectorMatch {
@@ -280,4 +280,4 @@ private:
     }
 };
 
-} // namespace cerberus
+} // namespace geryon

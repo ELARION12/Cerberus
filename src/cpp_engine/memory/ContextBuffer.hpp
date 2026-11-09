@@ -13,7 +13,7 @@ extern "C" {
     #include "allocator.h"
 }
 
-namespace cerberus {
+namespace geryon {
 
 enum class MessageRole { SYSTEM, USER, ASSISTANT, TOOL };
 
@@ -245,4 +245,4 @@ private:
     }
 };
 
-} // namespace cerberus
+} // namespace geryon

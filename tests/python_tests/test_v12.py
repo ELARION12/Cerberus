@@ -4,7 +4,7 @@ V1.2.0 Feature Tests (Pillars 1, 2, 3)
 
 import pytest
 
-from cerberus_agent import (
+from geryon import (
     Agent, SharedMemory, DynamicToolRegistry,
     OutputParser, ParsedKind, ToolInput, ToolOutput
 )

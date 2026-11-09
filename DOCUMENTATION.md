@@ -1,16 +1,16 @@
-# Cerberus design notes
+# Geryon design notes
 
-Version 1.5.0. These notes describe how the pieces fit together and what each one does today. For install steps and measured numbers see the [README](README.md).
+Version 1.6.0. These notes describe how the pieces fit together and what each one does today. For install steps and measured numbers see the [README](README.md).
 
 ## Layers
 
 ```
-Python API       python/cerberus_agent   Agent, tools, Ollama client, MCP bridge
+Python API       python/geryon   Agent, tools, Ollama client, MCP bridge
 C++17 engine     src/cpp_engine          context buffer, vector memory, tool registry, swarm
 C11 core         src/c_core              arena allocator, thread pool, process executor, event ring
 ```
 
-pybind11 (`src/bindings/pybind_main.cpp`) exposes the engine to Python as `cerberus_agent._cerberus_core`. The C core depends only on the C library and pthreads.
+pybind11 (`src/bindings/pybind_main.cpp`) exposes the engine to Python as `geryon._geryon_core`. The C core depends only on the C library and pthreads.
 
 ## Data structures
 
@@ -52,7 +52,7 @@ Two optional extras, both with caveats:
 - **HNSW** (`build_hnsw_index`) builds an approximate nearest-neighbour graph. Queries take roughly constant time, but the build is slow and recall is low at the default settings (M=16, ef_construction=64, ef_search=32). Treat it as experimental.
 
 ```python
-from cerberus_agent import VectorBuffer
+from geryon import VectorBuffer
 
 vb = VectorBuffer(dim=4)
 vb.push(embedding=[0.9, 0.1, 0.0, 0.0], text="chunk one")
@@ -66,9 +66,9 @@ for m in vb.query(embedding=[1.0, 0.0, 0.0, 0.0], top_k=1):
 A pool of 4 KB pages backed by POSIX shared memory (`shm_open` plus `mmap`, with an anonymous mapping as fallback). A block is found by the 64-bit FNV-1a hash of a prompt prefix, and blocks are reference counted: allocating a prefix that already exists returns the same block and adds a reference, and the pages are freed when the last reference is released.
 
 ```python
-from cerberus_agent import KVCacheArena
+from geryon import KVCacheArena
 
-kv = KVCacheArena(capacity_pages=1024, shm_prefix="/cerberus_kv_")
+kv = KVCacheArena(capacity_pages=1024, shm_prefix="/geryon_kv_")
 block = kv.allocate_block(token_prefix="<system>Prompt</system>", min_bytes=4096)
 print(block.block_id, block.page_count, block.shm_name)
 kv.release_block(block.block_id)
@@ -84,7 +84,7 @@ This is the allocator only. Nothing connects it to llama.cpp, vLLM or any other 
 - 64-bit ARM: NEON is part of the architecture and is always used.
 - Anything else, including 32-bit ARM: scalar code.
 
-`CERBERUS_SIMD=scalar` forces the scalar path, and `cerberus_agent.simd_backend()` reports what is active. The test suite runs the vector tests both ways and compares the answers.
+`GERYON_SIMD=scalar` forces the scalar path, and `geryon.simd_backend()` reports what is active. The test suite runs the vector tests both ways and compares the answers.
 
 ## Agent loop
 
@@ -97,7 +97,7 @@ The model client is any object with `plan(task, tool_specs, context)` and `is_al
 
 `Agent.run(task)` uses a fixed planner in the C++ engine that always chooses `shell|ls -la`, whatever the task. It exists for smoke tests.
 
-Progress messages are off by default. `CERBERUS_VERBOSE=1` or `cerberus_agent.set_verbose(True)` turns them on. Errors always go to stderr.
+Progress messages are off by default. `GERYON_VERBOSE=1` or `geryon.set_verbose(True)` turns them on. Errors always go to stderr.
 
 ## Other parts
 
@@ -114,6 +114,7 @@ Progress messages are off by default. `CERBERUS_VERBOSE=1` or `cerberus_agent.se
 - **1.2.0**: Output parser, dynamic tool registry, shared memory with a read-write lock.
 - **1.3.0**: Swarm orchestrator, SIMD vector memory, telemetry ring.
 - **1.4.0**: KV-cache page pool, SQ8 codes, HNSW index.
+- **1.6.0**: Renamed from Cerberus to Geryon. The Python package is now `geryon`.
 - **1.5.0**: Installable package (`pip install .`), CI on x86-64 and ARM64, run-time choice of AVX2 or NEON, role-labelled prompts, multi-step `run_llm()`, quiet by default, benchmarks that run, and corrected documentation.
 
 Changes since then are in [CHANGELOG.md](CHANGELOG.md).

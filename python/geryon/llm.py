@@ -1,5 +1,5 @@
 """
-Ollama LLM client for Cerberus.
+Ollama LLM client for Geryon.
 
 Lightweight HTTP client for a local Ollama server.
 Stdlib only - no external dependencies required.

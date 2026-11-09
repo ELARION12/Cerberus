@@ -8,9 +8,9 @@ import json
 
 import pytest
 
-import cerberus_agent as ca
-from cerberus_agent import Agent, ToolOutput
-from cerberus_agent.llm import OllamaClient
+import geryon as ca
+from geryon import Agent, ToolOutput
+from geryon.llm import OllamaClient
 
 pytestmark = pytest.mark.skipif(
     not ca._BACKEND_AVAILABLE, reason="native module is not built"
@@ -99,7 +99,7 @@ def test_planner_is_told_what_a_custom_tool_does():
 
 
 def test_prompt_labels_each_line_with_its_role_and_tool_name():
-    from cerberus_agent._cerberus_core import ContextBuffer
+    from geryon._geryon_core import ContextBuffer
     ctx = ContextBuffer(65536, 65536, 4096)
     ctx.add_system("be brief")
     ctx.add_user("count the words")

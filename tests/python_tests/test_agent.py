@@ -1,11 +1,11 @@
 """
 tests/python_tests/test_agent.py
-Python-layer tests for Cerberus
+Python-layer tests for Geryon
 """
 
 import pytest
 
-from cerberus_agent import Agent, ToolInput, ToolOutput
+from geryon import Agent, ToolInput, ToolOutput
 
 
 # ── Test 1: Agent Creation ────────────────────────────────
@@ -120,7 +120,7 @@ def test_agent_repr():
 # ── Main ──────────────────────────────────────────────────
 if __name__ == "__main__":
     print("╔══════════════════════════════════════════╗")
-    print("║  Cerberus Python Layer Tests             ║")
+    print("║  Geryon Python Layer Tests             ║")
     print("╚══════════════════════════════════════════╝")
 
     test_agent_creation()

@@ -9,7 +9,7 @@
 #include "ca_log.h"
 #include <cstdint>  
 
-namespace cerberus {
+namespace geryon {
 
 /* All data a tool receives from the agent planner. */
 struct ToolInput {
@@ -95,4 +95,4 @@ private:
     std::vector<std::string>                 names_;
 };
 
-} // namespace cerberus
+} // namespace geryon

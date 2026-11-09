@@ -1,6 +1,16 @@
 # Changelog
 
-All notable changes to Cerberus. Newest first.
+All notable changes to Geryon, which was called Cerberus until version 1.5.0. Newest first.
+
+## [v1.6.0] - 2026-11-09
+
+Renamed from Cerberus to Geryon. `cerberus` on PyPI is a data-validation library and several well-known projects share the name, which made this one hard to find. Nothing else changed.
+
+- The Python package and import name are now `geryon` (they were `cerberus_agent`), the native module is `_geryon_core`, and the command line tool is `geryon`.
+- Environment variables and CMake options changed prefix from `CERBERUS_` to `GERYON_`: `GERYON_VERBOSE`, `GERYON_SIMD`, `GERYON_NATIVE_ARCH`, `GERYON_BUILD_TESTS`, `GERYON_BUILD_BENCHMARKS`.
+- The shared-memory name prefix is now `/geryon_kv_` and the C++ namespace is `geryon`.
+- The repository moved to https://github.com/ELARION12/Geryon. The old address redirects.
+- Entries below this one, including the benchmark results they mention, keep the name the project had at the time.
 
 ## [v1.5.0] - 2026-11-09
 

@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace cerberus {
+namespace geryon {
 
 enum class AgentState {
     IDLE,
@@ -27,4 +27,4 @@ inline std::string agentStateToString(AgentState state) {
     }
 }
 
-} // namespace cerberus
+} // namespace geryon

@@ -23,7 +23,7 @@
 #include <mutex>
 #include "SQ8Quantizer.hpp"
 
-namespace cerberus {
+namespace geryon {
 
 struct HNSWNode {
     uint32_t id;
@@ -248,4 +248,4 @@ private:
     }
 };
 
-} // namespace cerberus
+} // namespace geryon

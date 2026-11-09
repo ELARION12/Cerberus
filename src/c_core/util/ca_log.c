@@ -9,7 +9,7 @@ static _Atomic int g_log_enabled = -1;
 int ca_log_enabled(void) {
     int v = atomic_load_explicit(&g_log_enabled, memory_order_relaxed);
     if (v < 0) {
-        const char* env = getenv("CERBERUS_VERBOSE");
+        const char* env = getenv("GERYON_VERBOSE");
         v = (env && env[0] != '\0' && env[0] != '0') ? 1 : 0;
         atomic_store_explicit(&g_log_enabled, v, memory_order_relaxed);
     }

@@ -8,10 +8,10 @@ file(GLOB_RECURSE CPP_ENGINE_SOURCES
 )
 
 # Build as static library
-add_library(cerberus_cpp STATIC ${CPP_ENGINE_SOURCES})
+add_library(geryon_cpp STATIC ${CPP_ENGINE_SOURCES})
 
 # Expose all subdirectory headers
-target_include_directories(cerberus_cpp PUBLIC
+target_include_directories(geryon_cpp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/agent
     ${CMAKE_CURRENT_SOURCE_DIR}/tools
@@ -22,12 +22,12 @@ target_include_directories(cerberus_cpp PUBLIC
 )
 
 # Link against C core (inherits its include dirs too)
-target_link_libraries(cerberus_cpp PUBLIC
-    cerberus_c
+target_link_libraries(geryon_cpp PUBLIC
+    geryon_c
     Threads::Threads
 )
 
-target_compile_options(cerberus_cpp PRIVATE
+target_compile_options(geryon_cpp PRIVATE
     -Wall -Wextra
 )
 

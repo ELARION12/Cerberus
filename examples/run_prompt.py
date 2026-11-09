@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Cerberus AI Custom Prompt Runner
+Geryon AI Custom Prompt Runner
 ================================
-Reads your custom prompt from 'prompt.txt', executes it through Cerberus AI
+Reads your custom prompt from 'prompt.txt', executes it through Geryon AI
 and your local LLM, and outputs the result cleanly.
 """
 
@@ -12,8 +12,8 @@ import os
 # Add python directory to module path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../python"))
 
-from cerberus_agent import Agent
-from cerberus_agent.llm import OllamaClient
+from geryon import Agent
+from geryon.llm import OllamaClient
 
 PROMPT_FILE = os.path.join(os.path.dirname(__file__), "prompt.txt")
 RESPONSE_FILE = os.path.join(os.path.dirname(__file__), "response.txt")
@@ -32,7 +32,7 @@ def main():
         return
 
     print("=" * 60)
-    print("🐕 Cerberus AI Custom Prompt Executor")
+    print("🐕 Geryon AI Custom Prompt Executor")
     print("=" * 60)
     print(f"📄 Loaded Prompt from '{PROMPT_FILE}':")
     print(f"   \"{prompt_text}\"\n")
@@ -44,14 +44,14 @@ def main():
         print("Start it in another terminal with:  ollama serve")
         return
 
-    agent = Agent(name="CerberusPromptAgent", llm_client=client)
+    agent = Agent(name="GeryonPromptAgent", llm_client=client)
 
     # Check if prompt asks for tool actions (create/write file, run shell, read file)
     action_keywords = ["write", "create", "make file", "run command", "shell", "read file", "list files", "mkdir"]
     is_action_prompt = any(kw in prompt_text.lower() for kw in action_keywords)
 
     if is_action_prompt:
-        print("🧠 Routing to Cerberus C++ Tool Execution Engine...")
+        print("🧠 Routing to Geryon C++ Tool Execution Engine...")
         output = agent.run_llm(prompt_text)
     else:
         print("🧠 Routing to Local LLM Direct Reasoning Engine...")

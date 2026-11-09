@@ -11,8 +11,8 @@ result. If the tool fails, the error goes back to the model for another try.
 
 import sys
 
-from cerberus_agent import Agent, set_verbose
-from cerberus_agent.llm import OllamaClient
+from geryon import Agent, set_verbose
+from geryon.llm import OllamaClient
 
 
 def main():

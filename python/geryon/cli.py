@@ -1,9 +1,9 @@
 """
-Simple CLI to run Cerberus from the terminal.
+Simple CLI to run Geryon from the terminal.
 
 Usage:
-    cerberus "list files in home directory"
-    cerberus --name DevBot "check disk space"
+    geryon "list files in home directory"
+    geryon --name DevBot "check disk space"
 """
 
 import argparse
@@ -14,8 +14,8 @@ from ._log import set_verbose
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="cerberus",
-        description="Cerberus agent runtime"
+        prog="geryon",
+        description="Geryon agent runtime"
     )
     parser.add_argument(
         "task",
@@ -24,8 +24,8 @@ def main():
         help="Task for the agent to execute"
     )
     parser.add_argument(
-        "--name", default="Cerberus",
-        help="Agent name (default: Cerberus)"
+        "--name", default="Geryon",
+        help="Agent name (default: Geryon)"
     )
     parser.add_argument(
         "--steps", type=int, default=10,
@@ -52,7 +52,7 @@ def main():
 
     if args.version:
         from . import __version__
-        print(f"Cerberus v{__version__}")
+        print(f"Geryon v{__version__}")
         sys.exit(0)
 
     set_verbose(not args.quiet and not args.list_tools)
@@ -71,7 +71,7 @@ def main():
         sys.exit(0)
 
     if not args.task:
-        print("Cerberus Interactive Mode (type 'exit' to quit)\n")
+        print("Geryon Interactive Mode (type 'exit' to quit)\n")
         while True:
             try:
                 task = input(f"[{agent.name}] > ").strip()

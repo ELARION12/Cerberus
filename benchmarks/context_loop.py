@@ -13,7 +13,7 @@ Each implementation runs in its own process so the memory numbers do not mix.
 
     python benchmarks/context_loop.py
     python benchmarks/context_loop.py --iterations 200000 --repeat 5
-    python benchmarks/context_loop.py --impls cerberus plain
+    python benchmarks/context_loop.py --impls geryon plain
 """
 
 import argparse
@@ -27,7 +27,7 @@ import sys
 import time
 from collections import deque
 
-IMPLS = ("cerberus", "plain", "langchain")
+IMPLS = ("geryon", "plain", "langchain")
 BUDGET_CHARS = 16384          # about 4096 tokens
 RENDER_EVERY = 10
 
@@ -49,23 +49,23 @@ def assistant_text(i):
     return f"Result {i}: Data processed successfully."
 
 
-def load_cerberus():
+def load_geryon():
     """Use the installed package if there is one, else the source tree."""
     try:
-        import cerberus_agent as ca
+        import geryon as ca
         if ca._BACKEND_AVAILABLE:
             return ca
     except ImportError:
         pass
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "python"))
-    for name in [m for m in sys.modules if m.startswith("cerberus_agent")]:
+    for name in [m for m in sys.modules if m.startswith("geryon")]:
         del sys.modules[name]
-    import cerberus_agent as ca
+    import geryon as ca
     return ca
 
 
-def run_cerberus(n):
-    ContextBuffer = load_cerberus()._cerberus_core.ContextBuffer
+def run_geryon(n):
+    ContextBuffer = load_geryon()._geryon_core.ContextBuffer
 
     after_import = rss_mb()
     ctx = ContextBuffer(1024 * 1024, 1024 * 1024, BUDGET_CHARS // 4)
@@ -124,7 +124,7 @@ def run_langchain(n):
     return after_import, base_peak, elapsed
 
 
-RUNNERS = {"cerberus": run_cerberus, "plain": run_plain, "langchain": run_langchain}
+RUNNERS = {"geryon": run_geryon, "plain": run_plain, "langchain": run_langchain}
 
 
 def child(impl, n):
@@ -144,9 +144,9 @@ def installed(impl):
             import langchain_core  # noqa: F401
         except ImportError:
             return False
-    if impl == "cerberus":
+    if impl == "geryon":
         try:
-            return load_cerberus()._BACKEND_AVAILABLE
+            return load_geryon()._BACKEND_AVAILABLE
         except ImportError:
             return False
     return True

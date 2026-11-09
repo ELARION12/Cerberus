@@ -3,7 +3,7 @@
 #include <cstdio>
 #include "ca_log.h"
 
-namespace cerberus {
+namespace geryon {
 
 void DynamicToolRegistry::registerMCP(const MCPToolSchema& schema,
                                       ToolFn trampoline) {
@@ -60,4 +60,4 @@ size_t DynamicToolRegistry::serverCount() const {
     return mcp_schemas_.size();
 }
 
-} // namespace cerberus
+} // namespace geryon

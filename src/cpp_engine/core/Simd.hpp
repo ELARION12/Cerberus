@@ -10,7 +10,7 @@
  * aarch64: NEON is part of the ISA, so it is always used.
  * anything else: scalar code.
  *
- * Set CERBERUS_SIMD=scalar in the environment to force the scalar path.
+ * Set GERYON_SIMD=scalar in the environment to force the scalar path.
  */
 
 #include <cstdlib>
@@ -25,13 +25,13 @@
 #  define CA_SIMD_NEON 1
 #endif
 
-namespace cerberus {
+namespace geryon {
 namespace simd {
 
 enum class Backend { Scalar, AVX2, NEON };
 
 inline Backend detect() {
-    const char* force = std::getenv("CERBERUS_SIMD");
+    const char* force = std::getenv("GERYON_SIMD");
     if (force && std::strcmp(force, "scalar") == 0) return Backend::Scalar;
 #if defined(CA_SIMD_X86)
     if (__builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma"))
@@ -58,4 +58,4 @@ inline const char* name(Backend b) {
 }
 
 } // namespace simd
-} // namespace cerberus
+} // namespace geryon

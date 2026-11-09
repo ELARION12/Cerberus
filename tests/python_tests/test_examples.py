@@ -6,7 +6,7 @@ import sys
 
 import pytest
 
-import cerberus_agent as ca
+import geryon as ca
 
 pytestmark = pytest.mark.skipif(
     not ca._BACKEND_AVAILABLE, reason="native module is not built"
@@ -18,7 +18,7 @@ EXAMPLE = os.path.join(os.path.dirname(__file__), "..", "..", "examples", "quick
 def test_quickstart_runs_and_prints_the_expected_answers():
     env = dict(os.environ)
     env["PYTHONPATH"] = os.path.dirname(os.path.dirname(ca.__file__))
-    env.pop("CERBERUS_VERBOSE", None)
+    env.pop("GERYON_VERBOSE", None)
     done = subprocess.run(
         [sys.executable, EXAMPLE], env=env, check=True, capture_output=True, text=True,
     )
@@ -39,7 +39,7 @@ def test_readme_quickstart_runs():
     code = text[start:text.index("```", start)]
     env = dict(os.environ)
     env["PYTHONPATH"] = os.path.dirname(os.path.dirname(ca.__file__))
-    env.pop("CERBERUS_VERBOSE", None)
+    env.pop("GERYON_VERBOSE", None)
     done = subprocess.run(
         [sys.executable, "-c", code], env=env, check=True, capture_output=True, text=True,
     )

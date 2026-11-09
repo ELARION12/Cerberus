@@ -4,15 +4,15 @@ V1.3.0 Feature Tests (VectorBuffer, Telemetry, Swarm)
 
 import pytest
 
-from cerberus_agent import (
+from geryon import (
     VectorBuffer, Telemetry, SwarmResult, SwarmSummary, version
 )
-from cerberus_agent._cerberus_core import TelemetryKind
+from geryon._geryon_core import TelemetryKind
 
 
 def test_v13_version():
-    import cerberus_agent
-    assert version() == cerberus_agent.__version__
+    import geryon
+    assert version() == geryon.__version__
     print("\n✅ V1.3.0 Version PASSED")
 
 

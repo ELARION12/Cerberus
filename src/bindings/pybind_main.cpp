@@ -18,9 +18,9 @@
 
 namespace py = pybind11;
 #include "ca_log.h"
-using namespace cerberus;
+using namespace geryon;
 
-PYBIND11_MODULE(_cerberus_core, m) {
+PYBIND11_MODULE(_geryon_core, m) {
     /* ── State & Role Enums ──────────────────────────────────────────────── */
     py::enum_<AgentState>(m, "AgentState")
         .value("IDLE",       AgentState::IDLE)
@@ -191,7 +191,7 @@ PYBIND11_MODULE(_cerberus_core, m) {
         .def("ref_count", [](const PageBlock& pb) { return pb.ref_count.load(); });
 
     py::class_<KVCacheArena>(m, "KVCacheArena")
-        .def(py::init<size_t, std::string>(), py::arg("capacity_pages") = 1024, py::arg("shm_prefix") = "/cerberus_kv_")
+        .def(py::init<size_t, std::string>(), py::arg("capacity_pages") = 1024, py::arg("shm_prefix") = "/geryon_kv_")
         .def("allocate_block", &KVCacheArena::allocateBlock, py::arg("token_prefix"), py::arg("min_bytes"))
         .def("lookup_prefix",  &KVCacheArena::lookupPrefix,  py::arg("token_prefix"))
         .def("release_block",  &KVCacheArena::releaseBlock,  py::arg("block_id"))
@@ -293,10 +293,10 @@ PYBIND11_MODULE(_cerberus_core, m) {
         .def("context", [](Agent& a) -> ContextBuffer& { return a.context(); }, py::return_value_policy::reference_internal)
         .def("tools",   [](Agent& a) -> DynamicToolRegistry& { return a.tools(); }, py::return_value_policy::reference_internal)
         .def("__repr__", [](const Agent& a) {
-            return "<Cerberus name='" + a.name() + "' state=" + a.stateName() + ">";
+            return "<Geryon name='" + a.name() + "' state=" + a.stateName() + ">";
         });
 
-    m.def("version", []() { return "1.5.0"; });
+    m.def("version", []() { return "1.6.0"; });
     m.def("simd_backend", []() { return std::string(simd::name(simd::active())); },
           "Vector kernel in use: 'avx2', 'neon' or 'scalar'");
     m.def("set_verbose", [](bool on) { ca_set_log_enabled(on ? 1 : 0); },

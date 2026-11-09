@@ -2,7 +2,7 @@
 The vector kernels (AVX2 / NEON) must give the same answers as the scalar code.
 
 The kernel is chosen once per process, so each run happens in its own
-subprocess, once with the default choice and once with CERBERUS_SIMD=scalar.
+subprocess, once with the default choice and once with GERYON_SIMD=scalar.
 """
 
 import json
@@ -12,7 +12,7 @@ import sys
 
 import pytest
 
-import cerberus_agent as ca
+import geryon as ca
 
 pytestmark = pytest.mark.skipif(
     not ca._BACKEND_AVAILABLE, reason="native module is not built"
@@ -20,7 +20,7 @@ pytestmark = pytest.mark.skipif(
 
 SCRIPT = r"""
 import json, random, sys
-import cerberus_agent as ca
+import geryon as ca
 
 random.seed(7)
 out = {"backend": ca.simd_backend(), "runs": []}
@@ -42,9 +42,9 @@ with open(sys.argv[1], "w") as f:
 def run_in_subprocess(tmp_path, simd=None):
     env = dict(os.environ)
     env["PYTHONPATH"] = os.path.dirname(os.path.dirname(ca.__file__))
-    env.pop("CERBERUS_SIMD", None)
+    env.pop("GERYON_SIMD", None)
     if simd:
-        env["CERBERUS_SIMD"] = simd
+        env["GERYON_SIMD"] = simd
     out_file = tmp_path / f"out_{simd or 'default'}.json"
     subprocess.run(
         [sys.executable, "-c", SCRIPT, str(out_file)],

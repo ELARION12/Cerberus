@@ -106,7 +106,7 @@ ca_exec_result_t ca_exec_run(const ca_exec_config_t* config) {
         execvp(config->command, (char* const*)argv);
 
         /* execvp only returns on failure. Exit with 127 (POSIX convention). */
-        fprintf(stderr, "[Cerberus Executor] exec failed: %s\n",
+        fprintf(stderr, "[Geryon Executor] exec failed: %s\n",
                 strerror(errno));
         _exit(127);
     }
@@ -137,7 +137,7 @@ ca_exec_result_t ca_exec_run(const ca_exec_config_t* config) {
                 waitpid(pid, &status, 0);  /* reap to avoid zombie */
                 result.status = CA_EXEC_TIMEOUT;
                 fprintf(stderr,
-                    "[Cerberus] Process timed out after %ums\n",
+                    "[Geryon] Process timed out after %ums\n",
                     config->timeout_ms);
                 goto cleanup;  /* still collect partial output below */
             }

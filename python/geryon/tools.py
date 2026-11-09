@@ -1,5 +1,5 @@
 """
-Built-in Python-side tools for Cerberus.
+Built-in Python-side tools for Geryon.
 """
 
 import subprocess
@@ -9,7 +9,7 @@ import urllib.error
 from typing import Optional
 
 try:
-    from ._cerberus_core import ToolInput, ToolOutput
+    from ._geryon_core import ToolInput, ToolOutput
 except ImportError:
     class ToolInput:
         name: str

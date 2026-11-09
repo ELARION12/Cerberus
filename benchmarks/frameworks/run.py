@@ -1,5 +1,5 @@
 """
-Compare Cerberus with other agent frameworks on the same local model.
+Compare Geryon with other agent frameworks on the same local model.
 
 Each framework runs in its own virtual environment (see setup_envs.sh) and in its
 own process. All of them talk to the model through a timing proxy, so model time
@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.join(HERE, "common"))
 import proxy  # noqa: E402
 import tasks  # noqa: E402
 
-ALL = ["plain", "cerberus", "langchain", "llamaindex", "smolagents"]
+ALL = ["plain", "geryon", "langchain", "llamaindex", "smolagents"]
 harness_mark = "@@BENCH@@ "
 
 
@@ -183,6 +183,7 @@ def main():
             for ln in open(path):
                 if ln.strip():
                     ev = json.loads(ln)
+                    ev["framework"] = {"cerberus": "geryon"}.get(ev["framework"], ev["framework"])   # files from before the rename
                     per_file.setdefault(ev["framework"], []).append(ev)
             merged.update(per_file)
         ordered = {n: merged[n] for n in ALL if n in merged}

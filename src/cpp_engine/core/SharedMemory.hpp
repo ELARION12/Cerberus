@@ -10,7 +10,7 @@ extern "C" {
     #include "shared_memory.h"
 }
 
-namespace cerberus {
+namespace geryon {
 
 class SharedMemory {
 public:
@@ -60,4 +60,4 @@ private:
     ca_shm_t* shm_;
 };
 
-} // namespace cerberus
+} // namespace geryon

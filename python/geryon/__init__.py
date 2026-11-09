@@ -1,10 +1,10 @@
 """
-Cerberus - a lightweight agent framework for local models and small devices.
+Geryon - a lightweight agent framework for local models and small devices.
 C11 core, C++17 engine, Python API.
 """
 
 try:
-    from ._cerberus_core import (
+    from ._geryon_core import (
         Agent         as _CppAgent,
         AgentConfig,
         AgentState,
@@ -53,7 +53,7 @@ from .tools import (
     http_get_tool,
 )
 
-__version__ = "1.5.0"
+__version__ = "1.6.0"
 __author__  = "Arun Kumar"
 
 __all__ = [

@@ -1,5 +1,5 @@
 """
-Bridge between Cerberus's synchronous tool interface
+Bridge between Geryon's synchronous tool interface
 and MCP servers, which communicate via async JSON-RPC over stdio.
 Runs a background asyncio event loop and exposes blocking synchronous methods.
 """

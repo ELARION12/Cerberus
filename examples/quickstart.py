@@ -7,7 +7,7 @@ To use a real local model, replace ScriptedPlanner() with
 OllamaClient(model="qwen2.5:0.5b") (see ollama_agent.py).
 """
 
-from cerberus_agent import Agent, ToolInput, ToolOutput, VectorBuffer, simd_backend
+from geryon import Agent, ToolInput, ToolOutput, VectorBuffer, simd_backend
 
 
 class ScriptedPlanner:

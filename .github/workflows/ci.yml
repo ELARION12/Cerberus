@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   # Plain CMake builds: C and C++ tests, plus the Python tests against the
-  # module the build drops into python/cerberus_agent/.
+  # module the build drops into python/geryon/.
   native:
     name: ${{ matrix.os }} / ${{ matrix.cc }} / ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
@@ -70,13 +70,13 @@ jobs:
       - name: Report the vector backend
         if: matrix.build_type == 'Release'
         run: |
-          PYTHONPATH=python python -c "import cerberus_agent as c; print('simd backend:', c.simd_backend())"
+          PYTHONPATH=python python -c "import geryon as c; print('simd backend:', c.simd_backend())"
 
       # First place the NEON kernels actually run
       - name: NEON must be active on ARM
         if: matrix.build_type == 'Release' && runner.arch == 'ARM64'
         run: |
-          test "$(PYTHONPATH=python python -c 'import cerberus_agent as c; print(c.simd_backend())')" = "neon"
+          test "$(PYTHONPATH=python python -c 'import geryon as c; print(c.simd_backend())')" = "neon"
 
   # What a user gets from "pip install .": build the wheel, install it away
   # from the source tree and run the tests against the installed copy.
@@ -104,8 +104,8 @@ jobs:
       - name: Tests against the installed package
         working-directory: ${{ runner.temp }}
         run: |
-          "$RUNNER_TEMP/venv/bin/python" -c "import cerberus_agent as c; print(c.__file__); print('simd backend:', c.simd_backend())"
+          "$RUNNER_TEMP/venv/bin/python" -c "import geryon as c; print(c.__file__); print('simd backend:', c.simd_backend())"
           "$RUNNER_TEMP/venv/bin/python" -m pytest "$GITHUB_WORKSPACE/tests/python_tests" -q
 
       - name: The command line tool starts
-        run: '"$RUNNER_TEMP/venv/bin/cerberus" --version'
+        run: '"$RUNNER_TEMP/venv/bin/geryon" --version'

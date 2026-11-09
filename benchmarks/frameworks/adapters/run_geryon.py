@@ -1,4 +1,4 @@
-"""Cerberus: Agent.run_llm(multi_step=True) with a local model."""
+"""Geryon: Agent.run_llm(multi_step=True) with a local model."""
 
 import os
 import sys
@@ -8,8 +8,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import harness  # noqa: E402
 import tasks  # noqa: E402
 
-from cerberus_agent import Agent, ToolOutput  # noqa: E402
-from cerberus_agent.llm import OllamaClient  # noqa: E402
+from geryon import Agent, ToolOutput  # noqa: E402
+from geryon.llm import OllamaClient  # noqa: E402
 
 SYSTEM = "You are a fast, efficient AI agent."
 client = OllamaClient(model=harness.MODEL, host=harness.PROXY, timeout=240)
@@ -43,4 +43,4 @@ def ask(prompt):
     return agent.run_llm(prompt, max_steps=harness.MAX_STEPS, multi_step=True)
 
 
-harness.run("cerberus", ask, version="cerberus-agent " + metadata.version("cerberus-agent"))
+harness.run("geryon", ask, version="geryon " + metadata.version("geryon"))

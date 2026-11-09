@@ -4,7 +4,7 @@
 /*
  * ca_ringbuf_t — Lock-Free Single-Producer Single-Consumer Ring Buffer
  * =====================================================================
- * Provides microsecond-precision telemetry event tracing for the Cerberus
+ * Provides microsecond-precision telemetry event tracing for the Geryon
  * runtime. Uses C11 stdatomic to ensure memory-order correctness without
  * any mutex, making it safe to call from hot loops and signal handlers.
  *

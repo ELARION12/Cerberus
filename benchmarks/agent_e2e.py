@@ -4,7 +4,7 @@ End-to-end agent benchmark with a real local model (Ollama).
 It runs the same small tasks through two loops that send the model identical
 prompts:
 
-  cerberus  Agent.run_llm()
+  geryon  Agent.run_llm()
   plain     a minimal Python loop: ask the planner, look the tool up in a dict,
             run it, retry with the error on failure
 
@@ -13,7 +13,7 @@ does, so later prompts include earlier tasks and their results.
 
 and reports success rate, time per task split into model time and everything
 else, and the memory of the agent process. Prompts are made identical by
-copying the tool list and the context format out of a real Cerberus agent.
+copying the tool list and the context format out of a real Geryon agent.
 
 Needs a running Ollama server and a pulled model, for example:
     ollama serve &
@@ -87,7 +87,7 @@ TASKS = [
     ("Please reverse 'level up'", "pu level"),
     ("Reverse 'abc123'", "321cba"),
     ("Convert 'hello world' to uppercase", "HELLO WORLD"),
-    ("Make this uppercase: cerberus", "CERBERUS"),
+    ("Make this uppercase: geryon", "GERYON"),
     ("Shout this: good morning", "GOOD MORNING"),
     ("Uppercase the text 'edge devices'", "EDGE DEVICES"),
 ]
@@ -95,26 +95,26 @@ TASKS = [
 
 # ---- helpers shared by parent and children -----------------------------------
 
-def load_cerberus():
+def load_geryon():
     """Use the installed package if there is one, else the source tree."""
     try:
-        import cerberus_agent as ca
+        import geryon as ca
         if ca._BACKEND_AVAILABLE:
             return ca
     except ImportError:
         pass
     sys.path.insert(0, os.path.join(HERE, "..", "python"))
-    for name in [m for m in sys.modules if m.startswith("cerberus_agent")]:
+    for name in [m for m in sys.modules if m.startswith("geryon")]:
         del sys.modules[name]
-    import cerberus_agent as ca
+    import geryon as ca
     return ca
 
 
 def standalone_ollama_client():
     """Import llm.py on its own so the plain loop never loads the native module."""
-    spec = importlib.util.find_spec("cerberus_agent")
+    spec = importlib.util.find_spec("geryon")
     if spec is None:
-        path = os.path.join(HERE, "..", "python", "cerberus_agent", "llm.py")
+        path = os.path.join(HERE, "..", "python", "geryon", "llm.py")
     else:
         path = os.path.join(list(spec.submodule_search_locations)[0], "llm.py")
     mod_spec = importlib.util.spec_from_file_location("standalone_llm", path)
@@ -177,10 +177,10 @@ def timed_client_class(base):
 
 # ---- children: one loop each, run in its own process --------------------------
 
-def child_cerberus(cfg):
-    ca = load_cerberus()
-    from cerberus_agent import Agent, ToolOutput
-    from cerberus_agent.llm import OllamaClient
+def child_geryon(cfg):
+    ca = load_geryon()
+    from geryon import Agent, ToolOutput
+    from geryon.llm import OllamaClient
 
     client = timed_client_class(OllamaClient)(model=cfg["model"], host=cfg["host"], timeout=120)
     agent = Agent(name="E2E", num_threads=1, load_defaults=False, llm_client=client, max_steps=MAX_STEPS)
@@ -260,9 +260,9 @@ def run_tasks(cfg, client, run, reset=None):
 # ---- parent -------------------------------------------------------------------
 
 def capture_prompt_shape(cfg):
-    """Ask a real Cerberus agent what it sends, so the plain loop can copy it."""
-    ca = load_cerberus()
-    from cerberus_agent import Agent, ToolOutput
+    """Ask a real Geryon agent what it sends, so the plain loop can copy it."""
+    ca = load_geryon()
+    from geryon import Agent, ToolOutput
 
     class Recorder:
         def __init__(self, replies):
@@ -350,13 +350,13 @@ def main():
     ap.add_argument("--rounds", type=int, default=1, help="how many times to repeat the A B B A order")
     ap.add_argument("--repeats", type=int, default=1, help="how many times each child runs the task list")
     ap.add_argument("--fresh", action="store_true", help="start every task with an empty conversation")
-    ap.add_argument("--child", choices=["cerberus", "plain"], help=argparse.SUPPRESS)
+    ap.add_argument("--child", choices=["geryon", "plain"], help=argparse.SUPPRESS)
     ap.add_argument("--config", help=argparse.SUPPRESS)
     args = ap.parse_args()
 
     if args.child:
         cfg = json.load(open(args.config))
-        result = child_cerberus(cfg) if args.child == "cerberus" else child_plain(cfg)
+        result = child_geryon(cfg) if args.child == "geryon" else child_plain(cfg)
         print(json.dumps(result))
         return
 
@@ -377,19 +377,19 @@ def main():
     print(f"machine : {cpu_name()}, {os.cpu_count()} threads, Python {platform.python_version()}")
     print(f"model   : {args.model} via Ollama at {args.host} (server uses about {server_mb:.0f} MB)")
     print(f"workload: {len(TASKS)} tasks x {args.repeats}, up to {MAX_STEPS} planner calls each, "
-          f"order cerberus/plain/plain/cerberus x {args.rounds}")
+          f"order geryon/plain/plain/geryon x {args.rounds}")
     print("context : " + ("fresh for every task" if args.fresh else "one running conversation per process") + "\n")
 
-    results = {"cerberus": [], "plain": []}
+    results = {"geryon": [], "plain": []}
     for _ in range(args.rounds):
-        for kind in ("cerberus", "plain", "plain", "cerberus"):
+        for kind in ("geryon", "plain", "plain", "geryon"):
             print(f"  running {kind} ...", flush=True)
             results[kind].append(spawn(kind, cfg_path))
     os.unlink(cfg_path)
 
     print()
     print("per run (success / tasks, planner calls per task):")
-    for kind in ("cerberus", "plain"):
+    for kind in ("geryon", "plain"):
         parts = []
         for res in results[kind]:
             n_ok = sum(r["ok"] for r in res["rows"])
@@ -397,7 +397,7 @@ def main():
         print(f"  {kind:<9}" + "   ".join(parts))
     print()
     print(f"{'':<10}{'success':>9}{'ms/task':>10}{'model ms':>10}{'other ms':>10}{'calls/task':>12}{'agent MB':>10}")
-    for kind in ("cerberus", "plain"):
+    for kind in ("geryon", "plain"):
         rows = [r for res in results[kind] for r in res["rows"]]
         ok = sum(r["ok"] for r in rows)
         total = median([r["total_ms"] for r in rows])
@@ -409,7 +409,7 @@ def main():
 
     print("\nwrong or failed answers:")
     shown = False
-    for kind in ("cerberus", "plain"):
+    for kind in ("geryon", "plain"):
         bad = {}
         for res in results[kind]:
             for r in res["rows"]:

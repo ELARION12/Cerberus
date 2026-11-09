@@ -1,6 +1,6 @@
 """
 The library prints nothing unless asked to. Each case runs in its own process
-because the native side reads CERBERUS_VERBOSE once.
+because the native side reads GERYON_VERBOSE once.
 """
 
 import os
@@ -9,14 +9,14 @@ import sys
 
 import pytest
 
-import cerberus_agent as ca
+import geryon as ca
 
 pytestmark = pytest.mark.skipif(
     not ca._BACKEND_AVAILABLE, reason="native module is not built"
 )
 
 SCRIPT = """
-import cerberus_agent as ca
+import geryon as ca
 {setup}
 agent = ca.Agent(name="Probe", num_threads=1)
 agent.run("list files in the current directory")
@@ -26,9 +26,9 @@ agent.run("list files in the current directory")
 def run(setup="", verbose_env=None):
     env = dict(os.environ)
     env["PYTHONPATH"] = os.path.dirname(os.path.dirname(ca.__file__))
-    env.pop("CERBERUS_VERBOSE", None)
+    env.pop("GERYON_VERBOSE", None)
     if verbose_env is not None:
-        env["CERBERUS_VERBOSE"] = verbose_env
+        env["GERYON_VERBOSE"] = verbose_env
     done = subprocess.run(
         [sys.executable, "-c", SCRIPT.format(setup=setup)],
         env=env, check=True, capture_output=True, text=True,

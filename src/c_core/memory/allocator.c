@@ -53,7 +53,7 @@ void* ca_arena_alloc(ca_arena_t* arena, size_t size) {
 
     if (arena->offset + aligned_size > arena->capacity) {
         fprintf(stderr,
-            "[Cerberus] Arena OOM: requested=%zu, used=%zu, cap=%zu\n",
+            "[Geryon] Arena OOM: requested=%zu, used=%zu, cap=%zu\n",
             aligned_size, arena->offset, arena->capacity);
         return NULL;
     }

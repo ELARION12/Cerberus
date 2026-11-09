@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 
-namespace cerberus {
+namespace geryon {
 
 struct ExecResult {
     std::string      stdout_data;
@@ -36,4 +36,4 @@ public:
     }
 };
 
-} // namespace cerberus
+} // namespace geryon

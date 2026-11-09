@@ -1,6 +1,6 @@
 // Native timings for the context buffer and the arena allocator.
 //
-//   cmake -B build -DCMAKE_BUILD_TYPE=Release -DCERBERUS_BUILD_BENCHMARKS=ON
+//   cmake -B build -DCMAKE_BUILD_TYPE=Release -DGERYON_BUILD_BENCHMARKS=ON
 //   cmake --build build --target bench_native
 //   ./build/benchmarks/bench_native
 //
@@ -21,7 +21,7 @@ static double elapsed_ms(Clock::time_point start, Clock::time_point end) {
 /* ── Bench 1: ContextBuffer push throughput ─────────────── */
 void bench_context_push(size_t num_messages, size_t msg_len) {
     const size_t arena = num_messages * (msg_len + 64) * 2;
-    cerberus::ContextBuffer buf(arena, 1 << 20, 1'000'000'000); // token budget too large to ever trim
+    geryon::ContextBuffer buf(arena, 1 << 20, 1'000'000'000); // token budget too large to ever trim
     std::string sample(msg_len, 'x');
 
     auto start = Clock::now();
@@ -39,7 +39,7 @@ void bench_context_push(size_t num_messages, size_t msg_len) {
 /* ── Bench 2: buildPrompt() throughput ──────────────────── */
 void bench_build_prompt(size_t num_messages, size_t msg_len) {
     const size_t arena = num_messages * (msg_len + 64) * 2;
-    cerberus::ContextBuffer buf(arena, arena, 1'000'000'000);
+    geryon::ContextBuffer buf(arena, arena, 1'000'000'000);
     std::string sample(msg_len, 'x');
     for (size_t i = 0; i < num_messages; ++i) buf.addUser(sample);
 
@@ -54,7 +54,7 @@ void bench_build_prompt(size_t num_messages, size_t msg_len) {
 
 /* ── Bench 3: trim() under pressure (O(1) with deque) ───── */
 void bench_trim_pressure(size_t max_tokens, size_t num_messages, size_t msg_len) {
-    cerberus::ContextBuffer buf(4 << 20, 1 << 20, max_tokens);
+    geryon::ContextBuffer buf(4 << 20, 1 << 20, max_tokens);
     std::string sample(msg_len, 'x');
 
     auto start = Clock::now();
@@ -95,7 +95,7 @@ void bench_arena(size_t num_allocs, size_t alloc_size) {
 }
 
 int main() {
-    printf("=== Cerberus native benchmarks ===\n\n");
+    printf("=== Geryon native benchmarks ===\n\n");
 
     bench_context_push(10'000, 100);
     bench_context_push(10'000, 1000);

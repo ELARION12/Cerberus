@@ -2,7 +2,7 @@
 
 /*
  * Progress logging for the engine. Off by default, so importing and using the
- * library prints nothing. Turn it on with CERBERUS_VERBOSE=1 or
+ * library prints nothing. Turn it on with GERYON_VERBOSE=1 or
  * ca_set_log_enabled(1). Errors go to stderr and are not affected.
  */
 
