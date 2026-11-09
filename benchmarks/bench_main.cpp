@@ -1,15 +1,16 @@
-// benchmarks/bench_main.cpp
-// Baseline timing harness — Phase 7, step 1.
-// Build: g++ -O2 -std=c++17 -mavx2 -march=native -I../src/cpp_engine bench_main.cpp -o bench
-// (link allocator.c separately if arena benchmarks are added: gcc -O2 -c ../src/c_core/memory/allocator.c)
+// Native timings for the context buffer and the arena allocator.
+//
+//   cmake -B build -DCMAKE_BUILD_TYPE=Release -DCERBERUS_BUILD_BENCHMARKS=ON
+//   cmake --build build --target bench_native
+//   ./build/benchmarks/bench_native
+//
+// Single-threaded, one run. Treat the numbers as rough; run it a few times.
 
 #include "memory/ContextBuffer.hpp"
 #include <chrono>
 #include <cstdio>
 #include <string>
 
-// We can include <deque> here now too, though it's covered by ContextBuffer.hpp
-#include <deque>
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -19,7 +20,8 @@ static double elapsed_ms(Clock::time_point start, Clock::time_point end) {
 
 /* ── Bench 1: ContextBuffer push throughput ─────────────── */
 void bench_context_push(size_t num_messages, size_t msg_len) {
-    cerberus::ContextBuffer buf(1'000'000'000); // large enough to avoid trim
+    const size_t arena = num_messages * (msg_len + 64) * 2;
+    cerberus::ContextBuffer buf(arena, 1 << 20, 1'000'000'000); // token budget too large to ever trim
     std::string sample(msg_len, 'x');
 
     auto start = Clock::now();
@@ -36,12 +38,13 @@ void bench_context_push(size_t num_messages, size_t msg_len) {
 
 /* ── Bench 2: buildPrompt() throughput ──────────────────── */
 void bench_build_prompt(size_t num_messages, size_t msg_len) {
-    cerberus::ContextBuffer buf(1'000'000'000);
+    const size_t arena = num_messages * (msg_len + 64) * 2;
+    cerberus::ContextBuffer buf(arena, arena, 1'000'000'000);
     std::string sample(msg_len, 'x');
     for (size_t i = 0; i < num_messages; ++i) buf.addUser(sample);
 
     auto start = Clock::now();
-    std::string prompt = buf.buildPrompt();
+    std::string_view prompt = buf.buildPrompt();
     auto end = Clock::now();
 
     double ms = elapsed_ms(start, end);
@@ -51,7 +54,7 @@ void bench_build_prompt(size_t num_messages, size_t msg_len) {
 
 /* ── Bench 3: trim() under pressure (O(1) with deque) ───── */
 void bench_trim_pressure(size_t max_tokens, size_t num_messages, size_t msg_len) {
-    cerberus::ContextBuffer buf(max_tokens);
+    cerberus::ContextBuffer buf(4 << 20, 1 << 20, max_tokens);
     std::string sample(msg_len, 'x');
 
     auto start = Clock::now();
@@ -92,7 +95,7 @@ void bench_arena(size_t num_allocs, size_t alloc_size) {
 }
 
 int main() {
-    printf("=== Cerberus Phase 7 Baseline (Optimized) ===\n\n");
+    printf("=== Cerberus native benchmarks ===\n\n");
 
     bench_context_push(10'000, 100);
     bench_context_push(10'000, 1000);

@@ -15,6 +15,7 @@ endif()
 
 # ── Options ────────────────────────────────────────────────
 option(CERBERUS_BUILD_TESTS "Build the C and C++ test programs" ON)
+option(CERBERUS_BUILD_BENCHMARKS "Build the native benchmark program" OFF)
 option(CERBERUS_NATIVE_ARCH "Tune for this machine with -march=native (never for builds you ship)" OFF)
 
 # ── Compiler Flags ─────────────────────────────────────────
@@ -51,6 +52,11 @@ endif()
 add_subdirectory(src/c_core)
 add_subdirectory(src/cpp_engine)
 add_subdirectory(src/bindings)
+
+# ── Benchmarks ─────────────────────────────────────────────
+if(CERBERUS_BUILD_BENCHMARKS)
+  add_subdirectory(benchmarks)
+endif()
 
 # ── Tests ──────────────────────────────────────────────────
 if(CERBERUS_BUILD_TESTS)
