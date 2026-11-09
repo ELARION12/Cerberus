@@ -6,9 +6,10 @@
  * Stores fixed-dimension float32 embedding vectors together with a string
  * payload (e.g. a chunk of text) inside memory.
  *
- * Upgrades in v1.4.0:
- *  • SQ8 Scalar Quantization: 8-bit int quantization for 4x memory reduction.
- *  • HNSW Graph Indexing: Native C++ HNSW graph for O(log N) fast top-k queries.
+ * Optional extras (both have known problems, see the README):
+ *  • SQ8: also keeps an 8-bit code per vector and scores queries against it.
+ *    The float vectors are kept too, so memory goes up, not down.
+ *  • HNSW: an approximate graph index. Experimental.
  */
 
 #include <vector>

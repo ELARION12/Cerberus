@@ -2,8 +2,6 @@
 V1.3.0 Feature Tests (VectorBuffer, Telemetry, Swarm)
 """
 
-import pytest
-
 from geryon import (
     VectorBuffer, Telemetry, SwarmResult, SwarmSummary, version
 )
@@ -22,7 +20,7 @@ def test_v13_vector_buffer():
     assert vb.empty()
 
     idx1 = vb.push([1.0, 0.0, 0.0, 0.0], "Text A")
-    idx2 = vb.push([0.0, 1.0, 0.0, 0.0], "Text B")
+    vb.push([0.0, 1.0, 0.0, 0.0], "Text B")
     assert vb.size() == 2
     assert vb.text(idx1) == "Text A"
 

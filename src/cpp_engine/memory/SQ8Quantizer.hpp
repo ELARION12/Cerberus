@@ -3,11 +3,11 @@
 /*
  * SQ8Quantizer — Scalar 8-Bit Quantization for SIMD Vector Compression
  * ===================================================================
- * Compresses 32-bit float vector embeddings into 8-bit int8/uint8 codes
- * with per-vector min and scale offsets.
+ * Turns 32-bit float vector embeddings into 8-bit uint8 codes with a per-vector
+ * minimum and scale. One code is a quarter the size of its float vector, but
+ * VectorBuffer keeps the float vectors as well, so using SQ8 there adds memory.
  *
  * Provides:
- *  • 4x Memory Reduction (float32 → uint8_t)
  *  • Fast SIMD Integer Dot-Product (AVX2 & NEON) with automatic scalar fallback
  */
 

@@ -10,9 +10,9 @@
  * C ring buffer, and exposes typed emit() overloads so callers never
  * have to touch the C API directly.
  *
- * Thread safety: emit() is lock-free and safe to call from any thread.
- * drain() / exportOtel() are NOT thread-safe and must be called from
- * a single consumer thread.
+ * Thread safety: emit() does not block, but the ring has a single producer,
+ * so only one thread may call emit() at a time. drain() / exportOtel() are
+ * NOT thread-safe and must be called from a single consumer thread.
  */
 
 #include <string>

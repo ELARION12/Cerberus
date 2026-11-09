@@ -4,7 +4,7 @@
 /*
  * ca_ringbuf_t — Lock-Free Single-Producer Single-Consumer Ring Buffer
  * =====================================================================
- * Provides microsecond-precision telemetry event tracing for the Geryon
+ * Records telemetry events with nanosecond timestamps for the Geryon
  * runtime. Uses C11 stdatomic to ensure memory-order correctness without
  * any mutex, making it safe to call from hot loops and signal handlers.
  *
@@ -103,7 +103,8 @@ void          ca_ring_reset  (ca_ringbuf_t* rb);
 /*
  * ca_ring_push — Append one event to the ring.
  * Returns true on success, false if the buffer is full (event dropped).
- * Never blocks. Safe to call from any thread/signal context.
+ * Never blocks. Only ONE thread may push at a time (single producer); one other
+ * thread may pop at the same time. Several producers need their own lock.
  */
 bool ca_ring_push(ca_ringbuf_t* rb, const ca_ring_event_t* evt);
 

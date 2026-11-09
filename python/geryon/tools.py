@@ -6,7 +6,9 @@ import subprocess
 import os
 import urllib.request
 import urllib.error
-from typing import Optional
+from urllib.parse import urlparse
+
+MAX_HTTP_BYTES = 1_000_000
 
 try:
     from ._geryon_core import ToolInput, ToolOutput
@@ -104,13 +106,18 @@ def write_file_tool(input: ToolInput) -> ToolOutput:
 def http_get_tool(input: ToolInput) -> ToolOutput:
     """
     Perform an HTTP GET request.
-    args = URL
+    args = URL (http or https only; at most 1 MB of the response is returned)
     """
     out = ToolOutput()
+    url = input.args.strip()
+    if urlparse(url).scheme not in ("http", "https"):
+        out.result  = ""
+        out.success = False
+        out.error   = "Only http and https URLs are allowed"
+        return out
     try:
-        with urllib.request.urlopen(input.args.strip(),
-                                    timeout=10) as resp:
-            out.result  = resp.read().decode("utf-8", errors="replace")
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            out.result  = resp.read(MAX_HTTP_BYTES).decode("utf-8", errors="replace")
             out.success = True
             out.error   = ""
     except urllib.error.URLError as e:

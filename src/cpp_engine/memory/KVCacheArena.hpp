@@ -1,19 +1,17 @@
 #pragma once
 
 /*
- * KVCacheArena — Zero-Copy Paged KV-Cache Arenas for LLM Co-Design
+ * KVCacheArena - a pool of page-aligned blocks in POSIX shared memory
  * ===================================================================
- * Manages page-aligned key-value (KV) attention cache blocks for local
- * LLM runtimes (e.g. llama.cpp, vLLM) and multi-agent context sharing.
+ * Hands out blocks of 4 KB pages (shm_open + mmap, with an anonymous mapping as
+ * a fallback). A block is found by the 64-bit FNV-1a hash of a prompt prefix and
+ * is reference counted: asking again for a prefix that already exists returns
+ * the same block, and the pages are released when the last reference is dropped.
  *
- * Key Features:
- * ─────────────
- *  • Page-aligned allocations (4KB / 64KB boundary) using mmap / POSIX shm
- *    for zero-copy CUDA IPC & CPU-side attention cache sharing.
- *  • Prefix Hash Table: 64-bit token hash lookup for instant prompt prefix
- *    cache hits (0-ms prefix caching).
- *  • Page Block Manager: Reference-counted KV page blocks with lock-free
- *    concurrency primitives.
+ * Another process can map a block by its shared-memory name. Nothing in this
+ * repository connects the pool to llama.cpp, vLLM or any other runtime, so no
+ * attention cache is shared today. The reference counts are atomic, and a mutex
+ * guards the lookup tables.
  */
 
 #include <vector>
@@ -118,7 +116,7 @@ public:
         std::string shm_name = shm_prefix_ + std::to_string(id);
         size_t alloc_bytes = required_pages * CA_PAGE_SIZE;
 
-        /* Create POSIX Shared Memory Object for Zero-Copy Inter-Process Access */
+        /* Create a POSIX shared memory object so another process can map this block by name */
         int fd = shm_open(shm_name.c_str(), O_CREAT | O_RDWR, 0666);
         if (fd < 0) {
             /* Fallback to anonymous memory if shm fails */

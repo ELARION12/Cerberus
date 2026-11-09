@@ -91,6 +91,25 @@ void test_executor() {
     assert(r3.status == CA_EXEC_TIMEOUT);
     ca_exec_result_free(&r3);
 
+    /* A working directory that cannot be entered must stop the command, not run it elsewhere. */
+    ca_exec_config_t bad = ca_exec_default_config();
+    bad.command     = "pwd";
+    bad.working_dir = "/nonexistent-geryon-directory";
+    bad.timeout_ms  = 2000;
+    ca_exec_result_t r4 = ca_exec_run(&bad);
+    assert(r4.status    == CA_EXEC_OK);
+    assert(r4.exit_code == 126);
+    ca_exec_result_free(&r4);
+
+    ca_exec_config_t good = ca_exec_default_config();
+    good.command     = "pwd";
+    good.working_dir = "/tmp";
+    good.timeout_ms  = 2000;
+    ca_exec_result_t r5 = ca_exec_run(&good);
+    assert(r5.exit_code == 0);
+    assert(r5.stdout_data != NULL && strstr(r5.stdout_data, "/tmp") != NULL);
+    ca_exec_result_free(&r5);
+
     printf("[TEST] Process Executor PASSED ✅\n");
 }
 

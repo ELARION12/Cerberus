@@ -2,8 +2,6 @@
 V1.2.0 Feature Tests (Pillars 1, 2, 3)
 """
 
-import pytest
-
 from geryon import (
     Agent, SharedMemory, DynamicToolRegistry,
     OutputParser, ParsedKind, ToolInput, ToolOutput
@@ -48,7 +46,7 @@ def test_v12_dynamic_tool_registry():
         out.success = True
         return out
 
-    schema = {
+    _ = {
         "name": "mcp_search",
         "description": "Search remote database",
         "server_id": "db_server",

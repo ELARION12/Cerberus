@@ -170,7 +170,7 @@ void test_context_buffer() {
 
 /* ── Test: V1.4.0 KVCacheArena ────────────────────────────── */
 void test_kv_cache_arena() {
-    printf("\n[TEST] V1.4.0 KVCacheArena (Zero-Copy Paged KV-Cache)\n");
+    printf("\n[TEST] KVCacheArena (shared-memory page pool)\n");
     KVCacheArena kv(100, "/geryon_test_kv_");
 
     std::string sys_prompt = "<system>You are Geryon AI assistant.</system>";

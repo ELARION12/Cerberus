@@ -10,6 +10,9 @@ Renamed from Cerberus to Geryon. `cerberus` on PyPI is a data-validation library
 - Environment variables and CMake options changed prefix from `CERBERUS_` to `GERYON_`: `GERYON_VERBOSE`, `GERYON_SIMD`, `GERYON_NATIVE_ARCH`, `GERYON_BUILD_TESTS`, `GERYON_BUILD_BENCHMARKS`.
 - The shared-memory name prefix is now `/geryon_kv_` and the C++ namespace is `geryon`.
 - The repository moved to https://github.com/ELARION12/Geryon. The old address redirects.
+- Fixed the process executor running a command in the wrong directory when `chdir` to the requested working directory failed. It now exits with code 126 instead.
+- `py_http_get` now accepts only http and https URLs (it used to pass `file://` and other schemes to `urlopen`) and returns at most 1 MB.
+- Corrected comments that overstated the code: the ring buffer is single-producer, not safe from any thread; the KV-cache pool is not lock-free, has no CUDA path and no 0-ms caching; the SQ8 and VectorBuffer headers no longer promise a 4x saving; HNSW is marked experimental.
 - Removed files nothing used: the logo images, the toy prompt-runner example, and the older end-to-end benchmark `benchmarks/agent_e2e.py` with its two result files (the framework comparison in `benchmarks/frameworks/` replaces it).
 - Entries below this one, including the benchmark results they mention, keep the name the project had at the time.
 

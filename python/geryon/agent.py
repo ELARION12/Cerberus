@@ -19,7 +19,7 @@ from ._geryon_core import (
     ToolOutput,
 )
 from . import _geryon_core as cpp
-from ._log import log, set_verbose
+from ._log import log
 from .tools import (
     shell_tool,
     read_file_tool,

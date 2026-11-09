@@ -90,8 +90,12 @@ ca_exec_result_t ca_exec_run(const ca_exec_config_t* config) {
         close(stdout_pipe[0]); close(stdout_pipe[1]);
         close(stderr_pipe[0]); close(stderr_pipe[1]);
 
-        if (config->working_dir)
-            chdir(config->working_dir);
+        if (config->working_dir && chdir(config->working_dir) != 0) {
+            /* Running the command somewhere else would be worse than not running it. */
+            fprintf(stderr, "[Geryon Executor] cannot enter %s: %s\n",
+                    config->working_dir, strerror(errno));
+            _exit(126);
+        }
 
         /* Build a NULL-terminated argv array from the config. */
         const char* argv[CA_EXEC_MAX_ARGS + 2];

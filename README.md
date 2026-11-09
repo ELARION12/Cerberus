@@ -197,7 +197,7 @@ Known problems:
 - SQ8 keeps the float vectors as well as the 8-bit codes, so it uses 25% more memory than plain float32 instead of a quarter of it.
 - HNSW is slow to build and has low recall at its defaults.
 - Geryon asks the model for one tool per turn. Frameworks that use the model's native tool calling can ask for several at once, so they need fewer model calls on multi-step tasks. Using native tool calling in Geryon is the next thing to try.
-- The built-in `shell` tool runs whatever command the model picks, with your permissions and no sandbox. Remove it with `agent.tools.remove_tool("shell")` if you do not want that.
+- The built-in tools run with your permissions and are not sandboxed. `shell` runs whatever command the model picks, `read_file` and `write_file` reach any path you can, and `py_http_get` fetches any http or https address. Remove the ones you do not want, for example `agent.tools.remove_tool("shell")`.
 - The NEON code has run in CI on ARM64 but not on a Raspberry Pi.
 - Linux only. Not published to PyPI.
 

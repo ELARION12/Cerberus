@@ -181,7 +181,7 @@ PYBIND11_MODULE(_geryon_core, m) {
         .value("CUSTOM",      CA_EVT_CUSTOM)
         .export_values();
 
-    /* ── V1.4.0 KVCacheArena (Zero-Copy Paged KV-Cache Memory) ──────────── */
+    /* ── KVCacheArena (shared-memory page pool) ──────────── */
     py::class_<PageBlock, std::shared_ptr<PageBlock>>(m, "PageBlock")
         .def_readonly("block_id",    &PageBlock::block_id)
         .def_readonly("page_count",  &PageBlock::page_count)
@@ -230,7 +230,7 @@ PYBIND11_MODULE(_geryon_core, m) {
         .def("bytes_used",         &VectorBuffer::bytesUsed)
         .def("print_stats",        &VectorBuffer::printStats);
 
-    /* ── V1.3.0 Telemetry (Lockless Ring Buffer) ─────────────────────────── */
+    /* ── Telemetry (single-producer ring buffer) ─────────────────────────── */
     py::class_<Telemetry>(m, "Telemetry")
         .def(py::init<uint32_t>(), py::arg("capacity") = CA_RING_DEFAULT_CAP)
         .def("emit",                &Telemetry::emit, py::arg("kind"), py::arg("agent_id"), py::arg("label") = "")

@@ -3,8 +3,6 @@ tests/python_tests/test_agent.py
 Python-layer tests for Geryon
 """
 
-import pytest
-
 from geryon import Agent, ToolInput, ToolOutput
 
 
@@ -48,7 +46,7 @@ def test_custom_tool():
 
     assert "multiply" in agent.tool_names
 
-    result = agent.tools.dispatch(
+    agent.tools.dispatch(
         ToolInput()
     )
 

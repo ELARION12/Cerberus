@@ -1,9 +1,9 @@
 """
 Thread-safe key-value blackboard shared across multiple Agent instances.
-Backed by C++ native arena + pthread_rwlock for zero-FFI-overhead reads.
+Backed by a C++ arena guarded by a pthread read-write lock, so several readers can read at once.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 try:
     from ._geryon_core import SharedMemory as _CppSharedMemory
 except ImportError:

@@ -5,7 +5,6 @@ C11 core, C++17 engine, Python API.
 
 try:
     from ._geryon_core import (
-        Agent         as _CppAgent,
         AgentConfig,
         AgentState,
         ToolInput,

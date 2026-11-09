@@ -1,6 +1,5 @@
 import unittest
 
-import geryon
 from geryon import KVCacheArena, VectorBuffer, __version__
 
 class TestV140Features(unittest.TestCase):

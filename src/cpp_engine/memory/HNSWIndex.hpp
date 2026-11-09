@@ -3,8 +3,9 @@
 /*
  * HNSWIndex — Native C++ Hierarchical Navigable Small World Graph Index
  * ===================================================================
- * Logarithmic-time O(log N) approximate nearest neighbour search over vector
- * embeddings for agent-scale and production RAG contexts.
+ * Approximate nearest neighbour search over vector embeddings.
+ * EXPERIMENTAL: building is slow and recall is low at the default settings
+ * (see the README's benchmark numbers).
  *
  * Parameters:
  *  • M: Max number of bidirectional links per node in graph layers (default: 16)
