@@ -29,7 +29,6 @@ env/
 tests/test_c_core
 tests/test_cpp_engine
 *.log
-response.txt
 
 # Editors
 .vscode/

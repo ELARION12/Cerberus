@@ -1,8 +1,5 @@
-# Linguist overrides — ensure GitHub displays only Geryon core languages (C++, C, Python, CMake)
-
+# GitHub language statistics: markdown and the license count as documentation,
+# and the CMake files are labelled as CMake.
 *.md linguist-documentation
-*.svg linguist-documentation
-*.gif linguist-documentation
 LICENSE linguist-documentation
-
 CMakeLists.txt linguist-language=CMake

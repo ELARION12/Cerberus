@@ -4,10 +4,9 @@ Raw output and the tables built from it. Each file says in its own header which 
 
 | File | What it is |
 |---|---|
-| `frameworks-qwen2.5-1.5b-2026-11-09.txt` | The final comparison tables: Cerberus, a plain loop, LangChain, LlamaIndex and smolagents, three rounds. |
+| `frameworks-qwen2.5-1.5b-2026-11-09.txt` | The final comparison tables: Geryon (still called Cerberus when this was measured), a plain loop, LangChain, LlamaIndex and smolagents, three rounds. |
 | `frameworks-qwen2.5-1.5b-2026-11-09-plain-cerberus-langchain-llamaindex.jsonl` | Raw per-task results for the first four. |
 | `frameworks-qwen2.5-1.5b-2026-11-09-smolagents.jsonl` | Raw per-task results for smolagents. |
-| `e2e-qwen2.5-0.5b-fresh-context.txt`, `e2e-qwen2.5-0.5b-one-conversation.txt` | An earlier, smaller test: `run_llm()` against a plain loop with a 0.5B model. These were run before the prompt format gained role labels, so they describe the older format. |
 
 smolagents is in its own file because my first full run crashed on it: the harness mistook a line that smolagents printed for a result. The harness was fixed and smolagents was run again alone, a little after the other four, so its timings were taken under slightly different conditions. The partial rows from the crashed run were removed from the first file. `python benchmarks/frameworks/run.py --report-from <files>` rebuilds the tables from the raw files.
 
