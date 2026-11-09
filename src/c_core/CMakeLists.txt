@@ -19,6 +19,9 @@ target_include_directories(cerberus_c PUBLIC
 )
 
 target_link_libraries(cerberus_c PUBLIC Threads::Threads)
+if(CERBERUS_RT_LIB)
+    target_link_libraries(cerberus_c PUBLIC ${CERBERUS_RT_LIB})
+endif()
 
 # Compiler warnings
 target_compile_options(cerberus_c PRIVATE

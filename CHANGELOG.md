@@ -6,6 +6,10 @@ All notable changes to the **Cerberus** framework are documented here.
 
 - Everything still called CoreAgent or IronAgent is now Cerberus. This breaks imports: the Python package is `cerberus_agent` (installs as `cerberus-agent`), the native module is `_cerberus_core`, and the shared memory prefix is `/cerberus_kv_`.
 - Moved `run_prompt.py` and `prompt.txt` into `examples/`.
+- `pip install .` now builds and installs the native engine (`pyproject.toml` replaces `setup.py`, which never built it). The package has no required dependencies; `mcp` is an optional extra.
+- The build no longer uses `-march=native`, so binaries run on any CPU of their architecture. AVX2 (x86-64) and NEON (64-bit ARM) kernels are picked when the program starts. `cerberus_agent.simd_backend()` reports the choice and `CERBERUS_SIMD=scalar` forces the plain path. `-DCERBERUS_NATIVE_ARCH=ON` brings the old behaviour back for local benchmarking.
+- Fixed the NEON quantizer reading up to four bytes past the end of the code buffer.
+- The C and C++ tests keep `assert()` on in Release builds (it was compiled out before, so nothing was being checked), and two out-of-date checks were corrected. The C++ suite also runs once more with the scalar kernels.
 
 ---
 

@@ -83,8 +83,7 @@ Cerberus/
 ├── LICENSE                     # MIT License
 ├── README.md                   # Technical documentation & usage guide
 ├── CHANGELOG.md                # Release history & version notes
-├── setup.py                    # Python package setup script (pip install cerberus-agent)
-├── requirements.txt            # Python dependencies
+├── pyproject.toml              # Python package + wheel build config (pip install cerberus-agent)
 │
 ├── src/                        # Core Engine Source Code
 │   ├── c_core/                 # Head 1: Bare-Metal C11 Core
@@ -153,31 +152,29 @@ Cerberus/
 
 ### Prerequisites
 * **C++ Compiler**: GCC 9+ or Clang 10+ supporting C++17 & C11
-* **CMake**: Version 3.14 or newer
-* **Python**: Version 3.8 or newer with `pybind11`
+* **CMake**: Version 3.18 or newer
+* **Python**: Version 3.9 or newer
 * **Local LLM Server (Optional)**: [Ollama](https://ollama.com) or `llama.cpp` server for local reasoning
 
-### 1. Clone & Build C++ Core Engine
+### 1. Install the Python package
 ```bash
-git clone https://github.com/your-username/Cerberus.git
+git clone https://github.com/ELARION12/Cerberus.git
 cd Cerberus
+pip install .
+```
+This builds the C/C++ engine and installs it as `cerberus-agent` (imported as `cerberus_agent`). For MCP tool servers add the extra: `pip install ".[mcp]"`.
 
-# Generate build files and compile release binary
+The build runs on any CPU of its architecture. AVX2 (x86-64) or NEON (64-bit ARM) kernels are chosen at run time; `cerberus_agent.simd_backend()` tells you which one is active, and `CERBERUS_SIMD=scalar` forces the plain C++ path.
+
+### 2. Build and test from source
+```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 
-# Run native C++ test suite
-./build/tests/test_cpp_engine
+ctest --test-dir build                  # C and C++ tests
+PYTHONPATH=python pytest tests/python_tests
 ```
-
-### 2. Install Python Package
-```bash
-# Build & install Python extension in editable mode
-pip install -e .
-
-# Or run Python unit test suite directly
-PYTHONPATH=build/src/bindings:python pytest tests/python_tests
-```
+The build copies the native module into `python/cerberus_agent/`, so the last line works without installing. To benchmark on your own machine you can add `-DCERBERUS_NATIVE_ARCH=ON`, but never ship a build made that way.
 
 ---
 

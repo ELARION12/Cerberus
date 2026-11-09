@@ -23,12 +23,18 @@ target_include_directories(_cerberus_core PRIVATE
     ${CMAKE_SOURCE_DIR}/src/c_core/executor
 )
 
-# Copy the .so into python/cerberus_agent/ after build
-add_custom_command(TARGET _cerberus_core POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        $<TARGET_FILE:_cerberus_core>
-        ${CMAKE_SOURCE_DIR}/python/cerberus_agent/$<TARGET_FILE_NAME:_cerberus_core>
-    COMMENT "📦 Copying _cerberus_core → python/cerberus_agent/"
-)
+# Wheel builds (scikit-build-core) use this install rule
+install(TARGETS _cerberus_core LIBRARY DESTINATION cerberus_agent)
+
+# Local dev builds: also drop the module next to the Python sources so
+# `PYTHONPATH=python` works without installing
+if(NOT SKBUILD)
+  add_custom_command(TARGET _cerberus_core POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy
+          $<TARGET_FILE:_cerberus_core>
+          ${CMAKE_SOURCE_DIR}/python/cerberus_agent/$<TARGET_FILE_NAME:_cerberus_core>
+      COMMENT "Copying _cerberus_core into python/cerberus_agent/"
+  )
+endif()
 
 message(STATUS "✅ Python bindings configured")

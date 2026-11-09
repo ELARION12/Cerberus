@@ -3,8 +3,6 @@
 *.md linguist-documentation
 *.svg linguist-documentation
 *.gif linguist-documentation
-requirements.txt linguist-documentation
 LICENSE linguist-documentation
 
 CMakeLists.txt linguist-language=CMake
-Makefile linguist-detectable=false

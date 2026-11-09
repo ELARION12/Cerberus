@@ -1,0 +1,57 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.13"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cerberus-agent"
+dynamic = ["version"]
+description = "Small agent runtime: C11 core, C++17 engine, Python API"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Arun Kumar" }]
+requires-python = ">=3.9"
+keywords = ["agent", "llm", "llama.cpp", "edge", "embedded", "kv-cache", "vector-search"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: C",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = []
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.0"]
+dev = ["pytest>=7", "pytest-cov"]
+
+[project.scripts]
+cerberus = "cerberus_agent.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ELARION12/Cerberus"
+Issues = "https://github.com/ELARION12/Cerberus/issues"
+Changelog = "https://github.com/ELARION12/Cerberus/blob/main/CHANGELOG.md"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+cmake.version = ">=3.18"
+cmake.build-type = "Release"
+wheel.packages = ["python/cerberus_agent"]
+sdist.exclude = ["bench.gif", "logo.png", "logo.svg", ".github"]
+
+[tool.scikit-build.cmake.define]
+CERBERUS_BUILD_TESTS = "OFF"
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "python/cerberus_agent/__init__.py"
+
+[tool.cibuildwheel]
+build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux_* *-manylinux_i686"
+test-requires = "pytest"
+test-command = "pytest {project}/tests/python_tests -q"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
