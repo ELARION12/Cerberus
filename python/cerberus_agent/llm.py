@@ -115,8 +115,10 @@ class OllamaClient:
         if "final_answer" in tool_specs:
             chain_hint = (
                 "You can call several tools one after another. Each result "
-                "is added to the conversation below. When you have everything "
-                "you need, call final_answer with the complete answer.\n\n"
+                "is added to the conversation below as a 'tool <name>:' line. "
+                "Use a result as the input of the next call when the task needs it. "
+                "Never repeat a call that already has a result. As soon as the "
+                "task is done, call final_answer with the answer.\n\n"
             )
         system = (
             "You are the planning module of a local agent runtime.\n"

@@ -385,8 +385,8 @@ class Agent:
 
         multi_step=True: the model may call several tools one after another. Each
         result goes back into the conversation, and the run ends when the model
-        calls final_answer, whose argument is returned. If the steps run out, the
-        last tool result is returned.
+        calls final_answer, whose argument is returned. If the steps run out, or the
+        model asks for a call that already succeeded, the last tool result is returned.
         """
         ctx = self._agent.context()
         tools = self._agent.tools()
@@ -416,6 +416,7 @@ class Agent:
             active_specs[self.FINAL_TOOL] = self.FINAL_SPEC
 
         finished = False
+        succeeded = set()          # calls that already worked; asking again means the model is going in circles
         for step in range(1, max_steps + 1):
             prompt = bytes(ctx.build_prompt()).decode("utf-8", errors="replace")
             plan_str = self.llm.plan(
@@ -433,6 +434,10 @@ class Agent:
                 ctx.add_assistant(tool_args)
                 return tool_args.strip()
 
+            if multi_step and (tool_name, tool_args) in succeeded:
+                log(f"[llm-plan step {step}] repeated {tool_name}({tool_args}), stopping with the last result")
+                return final_output
+
             if multi_step:
                 ctx.add_assistant(f"call {tool_name}({tool_args})")
 
@@ -445,6 +450,7 @@ class Agent:
             if output.success:
                 ctx.add_tool_result(tool_name, output.result)
                 final_output = output.result
+                succeeded.add((tool_name, tool_args))
                 if not multi_step:
                     finished = True
                     break

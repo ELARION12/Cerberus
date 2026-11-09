@@ -171,3 +171,10 @@ def test_single_step_behaviour_is_unchanged():
     planner = RecordingPlanner(["add_one|1"])
     assert counting_agent(planner).run_llm("add one to 1") == "2"
     assert len(planner.contexts) == 1
+
+
+def test_multi_step_stops_when_the_model_repeats_a_finished_call():
+    planner = RecordingPlanner(["add_one|1", "add_one|1", "add_one|1", "add_one|1"])
+    answer = counting_agent(planner).run_llm("add one to 1", max_steps=6, multi_step=True)
+    assert answer == "2"
+    assert len(planner.contexts) == 2          # it did not burn all the steps
