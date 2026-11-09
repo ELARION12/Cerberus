@@ -146,6 +146,7 @@ class Agent:
             self (for chaining)
         """
         self._agent.register_tool(name, description, fn)
+        self._tool_specs[name] = description   # what the planner is told about the tool
         return self
 
     def send_message(self, to_agent: "Agent", content: str) -> None:
@@ -401,7 +402,7 @@ class Agent:
         }
 
         for step in range(1, max_steps + 1):
-            prompt = ctx.build_prompt()
+            prompt = bytes(ctx.build_prompt()).decode("utf-8", errors="replace")
             plan_str = self.llm.plan(
                 task=task,
                 tool_specs=active_specs,
