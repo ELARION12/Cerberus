@@ -2,13 +2,7 @@
 V1.3.0 Feature Tests (VectorBuffer, Telemetry, Swarm)
 """
 
-import sys
-import os
 import pytest
-
-sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), "../../python"
-))
 
 from cerberus_agent import (
     VectorBuffer, Telemetry, SwarmResult, SwarmSummary, version

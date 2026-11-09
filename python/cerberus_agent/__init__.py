@@ -27,6 +27,7 @@ try:
         SwarmSummary,
         version,
         state_name,
+        simd_backend,
     )
     _BACKEND_AVAILABLE = True
 except ImportError as e:
@@ -40,6 +41,7 @@ except ImportError as e:
     TelemetryKind = None
     SwarmResult = None
     SwarmSummary = None
+    simd_backend = None
 
 from .agent import Agent
 from .shared_memory import SharedMemory
@@ -51,7 +53,7 @@ from .tools import (
 )
 
 __version__ = "1.4.0"
-__author__  = "Cerberus Contributors"
+__author__  = "Arun Kumar"
 
 __all__ = [
     "Agent",
@@ -81,4 +83,5 @@ __all__ = [
     "http_get_tool",
     "version",
     "state_name",
+    "simd_backend",
 ]

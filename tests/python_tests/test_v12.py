@@ -2,13 +2,7 @@
 V1.2.0 Feature Tests (Pillars 1, 2, 3)
 """
 
-import sys
-import os
 import pytest
-
-sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), "../../python"
-))
 
 from cerberus_agent import (
     Agent, SharedMemory, DynamicToolRegistry,

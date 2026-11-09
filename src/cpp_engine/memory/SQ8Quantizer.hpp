@@ -16,13 +16,7 @@
 #include <cstdint>
 #include <algorithm>
 
-#if defined(__AVX2__)
-#  include <immintrin.h>
-#  define CA_SIMD_AVX2 1
-#elif defined(__ARM_NEON) || defined(__aarch64__)
-#  include <arm_neon.h>
-#  define CA_SIMD_NEON 1
-#endif
+#include "../core/Simd.hpp"
 
 namespace cerberus {
 
@@ -88,57 +82,22 @@ public:
         const uint8_t* codes = sq.codes.data();
         uint32_t i = 0;
 
-#if defined(CA_SIMD_AVX2)
-        __m256 v_dot = _mm256_setzero_ps();
-        __m256 v_sum = _mm256_setzero_ps();
-
-        for (; i + 8 <= dim; i += 8) {
-            __m256 vq = _mm256_loadu_ps(q + i);
-            v_sum = _mm256_add_ps(v_sum, vq);
-
-            /* Convert 8 uint8_t codes to float */
-            __m128i c8 = _mm_loadu_si64(codes + i);
-            __m256i c32 = _mm256_cvtepu8_epi32(c8);
-            __m256 vc = _mm256_cvtepi32_ps(c32);
-
-            v_dot = _mm256_fmadd_ps(vq, vc, v_dot);
-        }
-
-        /* Horizontal sums */
-        __m128 lo_d = _mm256_castps256_ps128(v_dot);
-        __m128 hi_d = _mm256_extractf128_ps(v_dot, 1);
-        __m128 sum_d = _mm_add_ps(lo_d, hi_d);
-        sum_d = _mm_hadd_ps(sum_d, sum_d);
-        sum_d = _mm_hadd_ps(sum_d, sum_d);
-        dot_raw = _mm_cvtss_f32(sum_d);
-
-        __m128 lo_s = _mm256_castps256_ps128(v_sum);
-        __m128 hi_s = _mm256_extractf128_ps(v_sum, 1);
-        __m128 sum_s = _mm_add_ps(lo_s, hi_s);
-        sum_s = _mm_hadd_ps(sum_s, sum_s);
-        sum_s = _mm_hadd_ps(sum_s, sum_s);
-        sum_q = _mm_cvtss_f32(sum_s);
-
-#elif defined(CA_SIMD_NEON)
-        float32x4_t v_dot = vdupq_n_f32(0.0f);
-        float32x4_t v_sum = vdupq_n_f32(0.0f);
-
-        for (; i + 4 <= dim; i += 4) {
-            float32x4_t vq = vld1q_f32(q + i);
-            v_sum = vaddq_f32(v_sum, vq);
-
-            uint8x8_t c8 = vld1_u8(codes + i);
-            uint16x4_t c16 = vget_low_u16(vmovl_u8(c8));
-            uint32x4_t c32 = vmovl_u16(c16);
-            float32x4_t vc = vcvtq_f32_u32(c32);
-
-            v_dot = vmlaq_f32(v_dot, vq, vc);
-        }
-        dot_raw = vaddvq_f32(v_dot);
-        sum_q   = vaddvq_f32(v_sum);
+        switch (simd::active()) {
+#if defined(CA_SIMD_X86)
+            case simd::Backend::AVX2:
+                i = accumulate_avx2(q, codes, dim, sum_q, dot_raw);
+                break;
 #endif
+#if defined(CA_SIMD_NEON)
+            case simd::Backend::NEON:
+                i = accumulate_neon(q, codes, dim, sum_q, dot_raw);
+                break;
+#endif
+            default:
+                break;
+        }
 
-        /* Scalar tail processing */
+        /* Whatever the vector kernel did not cover (or everything, if scalar) */
         for (; i < dim; ++i) {
             sum_q += q[i];
             dot_raw += q[i] * static_cast<float>(codes[i]);
@@ -146,6 +105,76 @@ public:
 
         return (sq.min_val * sum_q) + (inv_scale * dot_raw);
     }
+
+private:
+    /* Each kernel adds the full vector blocks into sum_q and dot_raw and
+     * returns how many elements it consumed. */
+#if defined(CA_SIMD_X86)
+    CA_TARGET_AVX2
+    static uint32_t accumulate_avx2(const float* q, const uint8_t* codes, uint32_t dim,
+                                    float& sum_q, float& dot_raw)
+    {
+        __m256 v_dot = _mm256_setzero_ps();
+        __m256 v_sum = _mm256_setzero_ps();
+
+        uint32_t i = 0;
+        for (; i + 8 <= dim; i += 8) {
+            __m256 vq = _mm256_loadu_ps(q + i);
+            v_sum = _mm256_add_ps(v_sum, vq);
+
+            /* Convert 8 uint8_t codes to float */
+            __m128i c8 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(codes + i));
+            __m256i c32 = _mm256_cvtepu8_epi32(c8);
+            __m256 vc = _mm256_cvtepi32_ps(c32);
+
+            v_dot = _mm256_fmadd_ps(vq, vc, v_dot);
+        }
+
+        __m128 lo_d = _mm256_castps256_ps128(v_dot);
+        __m128 hi_d = _mm256_extractf128_ps(v_dot, 1);
+        __m128 sum_d = _mm_add_ps(lo_d, hi_d);
+        sum_d = _mm_hadd_ps(sum_d, sum_d);
+        sum_d = _mm_hadd_ps(sum_d, sum_d);
+        dot_raw += _mm_cvtss_f32(sum_d);
+
+        __m128 lo_s = _mm256_castps256_ps128(v_sum);
+        __m128 hi_s = _mm256_extractf128_ps(v_sum, 1);
+        __m128 sum_s = _mm_add_ps(lo_s, hi_s);
+        sum_s = _mm_hadd_ps(sum_s, sum_s);
+        sum_s = _mm_hadd_ps(sum_s, sum_s);
+        sum_q += _mm_cvtss_f32(sum_s);
+
+        return i;
+    }
+#endif
+
+#if defined(CA_SIMD_NEON)
+    static uint32_t accumulate_neon(const float* q, const uint8_t* codes, uint32_t dim,
+                                    float& sum_q, float& dot_raw)
+    {
+        float32x4_t v_dot = vdupq_n_f32(0.0f);
+        float32x4_t v_sum = vdupq_n_f32(0.0f);
+
+        uint32_t i = 0;
+        for (; i + 4 <= dim; i += 4) {
+            float32x4_t vq = vld1q_f32(q + i);
+            v_sum = vaddq_f32(v_sum, vq);
+
+            /* Only four codes are needed, so read four bytes, not eight */
+            uint32_t four;
+            std::memcpy(&four, codes + i, sizeof(four));
+            uint8x8_t c8 = vreinterpret_u8_u32(vdup_n_u32(four));
+            uint16x4_t c16 = vget_low_u16(vmovl_u8(c8));
+            uint32x4_t c32 = vmovl_u16(c16);
+            float32x4_t vc = vcvtq_f32_u32(c32);
+
+            v_dot = vmlaq_f32(v_dot, vq, vc);
+        }
+        dot_raw += vaddvq_f32(v_dot);
+        sum_q   += vaddvq_f32(v_sum);
+        return i;
+    }
+#endif
 };
 
 } // namespace cerberus

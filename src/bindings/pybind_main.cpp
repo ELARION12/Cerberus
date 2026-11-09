@@ -296,5 +296,7 @@ PYBIND11_MODULE(_cerberus_core, m) {
         });
 
     m.def("version", []() { return "1.4.0"; });
+    m.def("simd_backend", []() { return std::string(simd::name(simd::active())); },
+          "Vector kernel in use: 'avx2', 'neon' or 'scalar'");
     m.def("state_name", [](AgentState s) { return agentStateToString(s); });
 }

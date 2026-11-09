@@ -3,14 +3,7 @@ tests/python_tests/test_agent.py
 Python-layer tests for Cerberus
 """
 
-import sys
-import os
 import pytest
-
-# Add python/ to path
-sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), "../../python"
-))
 
 from cerberus_agent import Agent, ToolInput, ToolOutput
 

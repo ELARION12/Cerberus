@@ -25,14 +25,7 @@
 #include "SQ8Quantizer.hpp"
 #include "HNSWIndex.hpp"
 
-/* SIMD detection */
-#if defined(__AVX2__)
-#  include <immintrin.h>
-#  define CA_SIMD_AVX2 1
-#elif defined(__ARM_NEON) || defined(__aarch64__)
-#  include <arm_neon.h>
-#  define CA_SIMD_NEON 1
-#endif
+#include "../core/Simd.hpp"
 
 namespace cerberus {
 
@@ -199,14 +192,7 @@ public:
                size(), dim_, bytesUsed(),
                use_sq8_ ? "enabled" : "disabled",
                hnsw_index_ ? "enabled" : "disabled",
-#if defined(CA_SIMD_AVX2)
-               "AVX2"
-#elif defined(CA_SIMD_NEON)
-               "NEON"
-#else
-               "scalar"
-#endif
-        );
+               simd::name(simd::active()));
     }
 
 private:
@@ -219,11 +205,12 @@ private:
     std::vector<std::string>        texts_;
     std::unique_ptr<HNSWIndex>      hnsw_index_;
 
-    static float dot_simd(const float* __restrict__ a,
+#if defined(CA_SIMD_X86)
+    CA_TARGET_AVX2
+    static float dot_avx2(const float* __restrict__ a,
                           const float* __restrict__ b,
                           uint32_t n)
     {
-#if defined(CA_SIMD_AVX2)
         __m256 acc = _mm256_setzero_ps();
         uint32_t i = 0;
         for (; i + 8 <= n; i += 8) {
@@ -239,8 +226,14 @@ private:
         float result = _mm_cvtss_f32(sum);
         for (; i < n; ++i) result += a[i] * b[i];
         return result;
+    }
+#endif
 
-#elif defined(CA_SIMD_NEON)
+#if defined(CA_SIMD_NEON)
+    static float dot_neon(const float* __restrict__ a,
+                          const float* __restrict__ b,
+                          uint32_t n)
+    {
         float32x4_t acc = vdupq_n_f32(0.0f);
         uint32_t i = 0;
         for (; i + 4 <= n; i += 4) {
@@ -251,12 +244,31 @@ private:
         float result = vaddvq_f32(acc);
         for (; i < n; ++i) result += a[i] * b[i];
         return result;
+    }
+#endif
 
-#else
+    static float dot_scalar(const float* __restrict__ a,
+                            const float* __restrict__ b,
+                            uint32_t n)
+    {
         float result = 0.0f;
         for (uint32_t i = 0; i < n; ++i) result += a[i] * b[i];
         return result;
+    }
+
+    static float dot_simd(const float* __restrict__ a,
+                          const float* __restrict__ b,
+                          uint32_t n)
+    {
+        switch (simd::active()) {
+#if defined(CA_SIMD_X86)
+            case simd::Backend::AVX2: return dot_avx2(a, b, n);
 #endif
+#if defined(CA_SIMD_NEON)
+            case simd::Backend::NEON: return dot_neon(a, b, n);
+#endif
+            default: return dot_scalar(a, b, n);
+        }
     }
 
     static void l2_normalize(float* v, uint32_t n) {

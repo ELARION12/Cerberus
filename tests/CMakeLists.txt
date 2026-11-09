@@ -17,3 +17,7 @@ target_link_libraries(test_cpp_engine PRIVATE
 )
 target_compile_options(test_cpp_engine PRIVATE -UNDEBUG)
 add_test(NAME CppEngineTests COMMAND test_cpp_engine)
+
+# Same suite again with the vector kernels switched off
+add_test(NAME CppEngineTestsScalar COMMAND test_cpp_engine)
+set_tests_properties(CppEngineTestsScalar PROPERTIES ENVIRONMENT "CERBERUS_SIMD=scalar")
