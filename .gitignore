@@ -30,12 +30,7 @@ tests/test_c_core
 tests/test_cpp_engine
 *.log
 response.txt
-demo_test.py
-hello_iron.py
 
-# Scratchpad testing scripts
-test_qwen.py
-
-# Personal files
-Portfolio.html
-Resume.pdf
+# Editors
+.vscode/
+.idea/

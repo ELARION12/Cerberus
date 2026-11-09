@@ -235,4 +235,4 @@ graph LR
 
 ## 📄 License
 
-Cerberus is distributed under the **MIT License**. See [`LICENSE`](file:///home/elarion/Desktop/Cerberus/LICENSE) for details.
+Cerberus is distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.

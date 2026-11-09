@@ -2,6 +2,13 @@
 
 All notable changes to the **Cerberus** framework are documented here.
 
+## [Unreleased]
+
+- Everything still called CoreAgent or IronAgent is now Cerberus. This breaks imports: the Python package is `cerberus_agent` (installs as `cerberus-agent`), the native module is `_cerberus_core`, and the shared memory prefix is `/cerberus_kv_`.
+- Moved `run_prompt.py` and `prompt.txt` into `examples/`.
+
+---
+
 ## 🚀 [v1.4.0] - 2026-07-31 (Latest Build)
 
 ### 🌟 Major Highlights: Model & Memory Co-Design
