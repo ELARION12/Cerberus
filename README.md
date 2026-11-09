@@ -1,235 +1,152 @@
-<p align="center">
-  <img src="logo.png?v=2" alt="Cerberus AI Logo" width="100%"/>
-</p>
+![Cerberus](https://raw.githubusercontent.com/ELARION12/Cerberus/main/logo.png)
 
-# Cerberus AI 3-Headed Bare-Metal Agent Engine
+[![CI](https://github.com/ELARION12/Cerberus/actions/workflows/ci.yml/badge.svg)](https://github.com/ELARION12/Cerberus/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> **Version v1.4.0 (Model & Memory Co-Design)**  
-> *3-Headed Architecture: High-performance C11 bare-metal core, C++17 state machine & SIMD vector RAG, and Python3 API.*
+# Cerberus
 
----
+Cerberus is a small agent runtime written in C and C++ with a Python API. It keeps an agent's conversation context, tool registry and vector memory in native code, so the bookkeeping around a language model costs little time and memory. It is meant to run next to a local model (Ollama, llama.cpp) on small Linux machines.
 
-## 📌 Overview
+It does not run models and it does not make a model faster. It is also early: the core pieces work and are tested, some parts are rough, and the [status section](#status) lists what is not done.
 
-**Cerberus AI** (or **Cerberus**) is an ultra-low overhead, production-grade AI agent runtime engineered from first principles around a **3-headed architecture (C11 + C++17 + Python3)**. 
+## Install
 
-Unlike conventional Python-only agent frameworks (LangChain, AutoGen) that consume 300MB+ RAM and suffer from Global Interpreter Lock (GIL) contention, Cerberus executes high-frequency reasoning loops (`Think ➔ Plan ➔ Act ➔ Reflect`) directly in compiled C++ at **270,000+ iterations/second** with a tiny **~14 MB RSS memory footprint**.
+Linux only for now, on x86-64 or 64-bit ARM. You need Python 3.9 or newer and a C++17 compiler. `pip` fetches CMake itself if your system does not have a recent one.
 
----
-
-## 🌟 The 3-Headed Architecture
-
-```mermaid
-graph TD
-    subgraph Head3["🐍 Head 3: Python3 API & Prompt Engine"]
-        API["Python Package (cerberus_agent)"]
-        Runner["Custom Prompt Runner (run_prompt.py)"]
-        Pybind["Pybind11 C++ Bridge (_cerberus_core)"]
-    end
-
-    subgraph Head2["⚡ Head 2: C++17 Reasoning & SIMD RAG Engine"]
-        KVCache["KVCacheArena (Zero-Copy Paged Memory)"]
-        HNSW["HNSWIndex (O(log N) Vector Search)"]
-        SQ8["SQ8Quantizer (8-Bit SIMD Quantization)"]
-        Vector["VectorBuffer (Embedded RAG Memory)"]
-        Swarm["SwarmOrchestrator (Fan-out/Fan-in)"]
-        Parser["OutputParser (Native AST Classification)"]
-    end
-
-    subgraph Head1["⚙️ Head 1: Bare-Metal C11 Core"]
-        Arena["ca_arena_t (Semispace Ping-Pong Memory)"]
-        SHM["ca_shm_t (pthread_rwlock_t Shared Memory)"]
-        Ring["ca_ringbuf_t (Lockless SPSC Telemetry Ring)"]
-        Pool["ca_thread_pool_t (Lazy Worker Pool)"]
-    end
-
-    Runner --> API
-    API --> Pybind
-    Pybind --> KVCache
-    Pybind --> Vector
-    Pybind --> Swarm
-    Vector --> HNSW
-    Vector --> SQ8
-    KVCache --> Arena
-    Vector --> Arena
-    SHM --> Arena
-```
-
-1. **🧠 Zero-Copy Paged KV-Cache Arenas (`KVCacheArena`) [v1.4.0]**:
-   - Page-aligned (4KB / 64KB boundary) memory pool backed by `mmap` and POSIX shared memory (`shm_open`).
-   - Enables **0-copy attention KV-cache sharing** between local LLM runtimes (`llama.cpp`, `vLLM`) and agent processes.
-   - **64-bit FNV-1a token sequence hash lookup** for instant prompt prefix cache hits (0-ms prefix caching).
-
-2. **⚡ SQ8 Quantized SIMD Vector Memory (`SQ8Quantizer`) [v1.4.0]**:
-   - Compresses 32-bit float vector embeddings into 8-bit `uint8` codes for **4x memory compression** (~75% RAM reduction).
-   - Accelerated dot-product SIMD execution (x86-64 AVX2 / ARM NEON) with scalar fallbacks.
-
-3. **📍 Native C++ HNSW Graph Index (`HNSWIndex`) [v1.4.0]**:
-   - Hierarchical Navigable Small World graph index for logarithmic time **$O(\log N)$ vector search** over large embedding corpora.
-
-4. **🐝 Hierarchical C++ Swarm Orchestration (`SwarmOrchestrator`)**:
-   - Multi-threaded fan-out/fan-in parallel worker delegation over native C thread pools with zero GIL contention.
-
-5. **📡 Lockless Event Ring Telemetry (`ca_ringbuf_t`)**:
-   - Microsecond atomic SPSC ring buffer for high-resolution nanosecond span tracing and direct OpenTelemetry (OTLP) NDJSON log exporting.
-
----
-
-## 📂 Detailed Project Structure
-
-```text
-Cerberus/
-├── CMakeLists.txt              # Top-level CMake build configuration
-├── LICENSE                     # MIT License
-├── README.md                   # Technical documentation & usage guide
-├── CHANGELOG.md                # Release history & version notes
-├── pyproject.toml              # Python package + wheel build config (pip install cerberus-agent)
-│
-├── src/                        # Core Engine Source Code
-│   ├── c_core/                 # Head 1: Bare-Metal C11 Core
-│   │   ├── memory/
-│   │   │   ├── allocator.h/c   # ca_arena_t bump-pointer arena allocator
-│   │   │   └── shared_memory.h/c # ca_shm_t POSIX rwlock shared blackboard
-│   │   ├── threading/
-│   │   │   └── thread_pool.h/c # ca_thread_pool_t lazy thread pool
-│   │   ├── executor/
-│   │   │   └── executor.h/c    # ca_exec_t POSIX process execution engine
-│   │   └── telemetry/
-│   │       └── ringbuf.h/c     # ca_ringbuf_t lockless SPSC atomic ring buffer
-│   │
-│   ├── cpp_engine/             # Head 2: C++17 State Machine & Memory Engines
-│   │   ├── memory/
-│   │   │   ├── KVCacheArena.hpp # Zero-copy paged KV-cache memory arena
-│   │   │   ├── SQ8Quantizer.hpp # 8-bit scalar vector quantization & SIMD math
-│   │   │   ├── HNSWIndex.hpp    # Logarithmic O(log N) HNSW graph index
-│   │   │   ├── VectorBuffer.hpp # Embedded SIMD vector memory for RAG
-│   │   │   ├── ContextBuffer.hpp # Semispace ping-pong prompt arena
-│   │   │   └── Arena.hpp        # C++ RAII wrapper for ca_arena_t
-│   │   ├── agent/
-│   │   │   ├── Agent.hpp/cpp    # C++ Agent state machine
-│   │   │   └── AgentState.hpp   # State enums (THINK, PLAN, ACT, REFLECT)
-│   │   ├── swarm/
-│   │   │   └── SwarmOrchestrator.hpp # Hierarchical swarm orchestrator
-│   │   ├── parser/
-│   │   │   └── OutputParser.hpp/cpp # Native C++ AST output classifier
-│   │   └── tools/
-│   │       ├── ToolRegistry.hpp # Tool dispatcher & execution registry
-│   │       └── DynamicToolRegistry.hpp/cpp # MCP tool hot-swapping registry
-│   │
-│   └── bindings/               # Pybind11 C Extensions
-│       └── pybind_main.cpp     # Pybind11 module definition (_cerberus_core)
-│
-├── python/                     # Head 3: Python High-Level Package
-│   └── cerberus_agent/         # Main Python package (import cerberus_agent)
-│       ├── __init__.py         # Package exports & version definitions
-│       ├── agent.py            # High-level Python Agent class
-│       ├── cli.py              # CLI entry point (cerberus command)
-│       ├── llm.py              # Ollama / Local LLM HTTP client
-│       ├── shared_memory.py    # Python SharedMemory wrapper
-│       ├── tools.py            # Default system tools (shell, read, write)
-│       ├── mcp_client.py       # MCP Tool Bridge client
-│       └── mcp_filesystem_server.py # Built-in MCP filesystem server
-│
-├── benchmarks/                 # Performance Benchmarking Suite
-│   ├── bench_main.cpp          # Native C++ hot-loop benchmark
-│   ├── bench_vs_langchain.py   # Latency comparison against LangChain
-│   └── hot_loop.py             # Python wrapper benchmark
-│
-├── examples/                   # Usage Examples
-│   ├── test_local_llm.py       # Local LLM integration example
-│   ├── run_prompt.py           # Prompt runner: reads prompt.txt, answers via a local Ollama model
-│   └── prompt.txt              # Input for run_prompt.py
-│
-└── tests/                      # Suite of Unit & System Tests
-    ├── c_tests/                # C11 core unit tests
-    ├── cpp_tests/              # C++ engine unit tests (test_cpp_engine.cpp)
-    └── python_tests/           # Python unit tests (pytest / unittest)
-```
-
----
-
-## 🛠️ Fork Installation & Setup Instructions
-
-### Prerequisites
-* **C++ Compiler**: GCC 9+ or Clang 10+ supporting C++17 & C11
-* **CMake**: Version 3.18 or newer
-* **Python**: Version 3.9 or newer
-* **Local LLM Server (Optional)**: [Ollama](https://ollama.com) or `llama.cpp` server for local reasoning
-
-### 1. Install the Python package
 ```bash
 git clone https://github.com/ELARION12/Cerberus.git
 cd Cerberus
 pip install .
 ```
-This builds the C/C++ engine and installs it as `cerberus-agent` (imported as `cerberus_agent`). For MCP tool servers add the extra: `pip install ".[mcp]"`.
 
-The build runs on any CPU of its architecture. AVX2 (x86-64) or NEON (64-bit ARM) kernels are chosen at run time; `cerberus_agent.simd_backend()` tells you which one is active, and `CERBERUS_SIMD=scalar` forces the plain C++ path.
+This builds the native engine and installs it as `cerberus-agent` (import name `cerberus_agent`). It is not on PyPI yet. For MCP tool servers use `pip install ".[mcp]"`. There are no other required dependencies.
 
-### 2. Build and test from source
+## Quickstart
+
+This runs offline. A scripted planner stands in for the model so you can see the loop work.
+
+```python
+from cerberus_agent import Agent, ToolInput, ToolOutput, VectorBuffer
+
+
+class ScriptedPlanner:
+    """Answers the way a model would: 'tool_name|arguments'."""
+    def plan(self, task, tool_specs, context):
+        return "word_count|the quick brown fox"
+
+    def is_alive(self):
+        return True
+
+
+agent = Agent(name="Demo", llm_client=ScriptedPlanner())
+
+
+@agent.tool("word_count", "Count the words in the text")
+def word_count(inp: ToolInput) -> ToolOutput:
+    out = ToolOutput()
+    out.result = str(len(inp.args.split()))
+    out.success = True
+    return out
+
+
+print(agent.run_llm("How many words are in 'the quick brown fox'?"))   # 4
+
+memory = VectorBuffer(dim=3)
+memory.push([1.0, 0.0, 0.0], "cats purr")
+memory.push([0.0, 1.0, 0.0], "dogs bark")
+print(memory.query([0.9, 0.1, 0.0], top_k=1)[0].text)                   # cats purr
+```
+
+The same code is in [`examples/quickstart.py`](examples/quickstart.py). To use a real local model, swap the planner for `OllamaClient` as in [`examples/ollama_agent.py`](examples/ollama_agent.py).
+
+The library prints nothing by default. Set `CERBERUS_VERBOSE=1` or call `cerberus_agent.set_verbose(True)` to see what the agent is doing.
+
+## What is in it
+
+| Part | What it does | State |
+|---|---|---|
+| Context buffer | Keeps a rolling conversation inside a token budget, in arena memory that is compacted instead of grown. | Works, tested, benchmarked below. |
+| Tools | Register Python functions as tools, or use the built-in shell and file tools. The registry can add and remove tools while the agent runs, which is how MCP servers are plugged in (needs the `mcp` extra). | The registry is tested. The MCP bridge is not covered by tests yet. |
+| Agent loop with a local model | `run_llm()` asks the model for a tool call, runs it, and returns the result. If the tool fails, the error goes back to the model for another try. | Works, but it is one tool call per task. It does not chain steps or write a final answer. |
+| Vector memory | Brute-force cosine search over stored embeddings with AVX2 or NEON kernels, chosen at run time. | Works. |
+| 8-bit vectors (SQ8) | Stores 8-bit codes next to the float vectors. | Does not save memory yet, see below. |
+| HNSW index | Approximate nearest-neighbour graph. | Experimental: slow to build and low recall at the defaults. |
+| KV-cache pages | A shared-memory page pool with lookup by prompt-prefix hash. | The allocator works. There is no llama.cpp or vLLM integration yet. |
+| Swarm, telemetry, shared memory | Thread-pool fan-out of sub-tasks, a lock-free event ring that can write JSON log lines in a simplified OpenTelemetry format, a shared blackboard for agents. | Present, lightly tested. |
+
+`Agent.run()` without a model is a placeholder: it always plans `ls -la`. Use `run_llm()`.
+
+## Numbers
+
+Measured on an Intel Core i5-10310U laptop (8 threads), Python 3.12, Linux. Run them yourself with the scripts in [`benchmarks/`](benchmarks/). Results move by about 30% between runs on this laptop.
+
+**Context handling** (`benchmarks/context_loop.py`). 50,000 iterations, each adding a user and an assistant message, trimming to a 16,384 character budget, and rendering the prompt every 10th time. Median of 3 runs, each in its own process.
+
+| | iterations/sec | memory used by `import` |
+|---|---|---|
+| Cerberus `ContextBuffer` | about 870,000 | about 9 MB |
+| Plain Python `deque` | about 185,000 | none |
+| `langchain_core` message objects | about 75,000 | about 27 MB |
+
+That is the cost of keeping the conversation, not of running an agent. Model calls take milliseconds to seconds each, so this part is small either way. It matters when many agents share one small machine, or when the machine has little memory.
+
+**Vector search** (`benchmarks/vector_query.py`). 5,000 clustered random vectors, 384 dimensions, top 5. The data is not real embeddings.
+
+| | ms per query | index size | top-5 matches exact |
+|---|---|---|---|
+| Cerberus, scalar code | 1.95 | 7.8 MB | 100% |
+| Cerberus, AVX2 | 0.51 | 7.8 MB | 100% |
+| Cerberus, SQ8 | 0.51 | 9.8 MB | 98% |
+| Cerberus, HNSW | 0.11 | 8.3 MB | 84% |
+| numpy matrix product (reference) | 0.3 to 0.5 | 7.7 MB | 100% |
+
+AVX2 is about 4 times faster than the scalar path. A plain numpy matrix product is about as fast as Cerberus, so the point here is not speed over numpy. It is doing the search inside the agent process with no numpy installed. HNSW answers in 0.1 ms but took 18 seconds to build and, at 20,000 vectors, found only about half of the true top 5. Do not rely on it yet.
+
+**Native code** (`bench_native`, build with `-DCERBERUS_BUILD_BENCHMARKS=ON`). One arena allocation takes about 2 ns, and adding a 100 character message to the context buffer about 75 ns.
+
+I have not run these on a Raspberry Pi yet. The ARM64 build is compiled and tested in CI, and Pi numbers will be added here when I have them.
+
+## How it is built
+
+```
+Python API            python/cerberus_agent      agent loop, tools, Ollama client, MCP bridge
+C++17 engine          src/cpp_engine             context buffer, vector memory, tool registry, swarm
+C11 core              src/c_core                 arena allocator, thread pool, process executor, event ring
+```
+
+The C core has no dependencies beyond the C library and pthreads. The C++ engine is mostly header-only. pybind11 joins the engine to Python as `_cerberus_core`.
+
+The build does not use `-march=native`, so a binary runs on any CPU of its architecture. The AVX2 kernels (x86-64) are compiled in and used only if the CPU reports AVX2 and FMA. On 64-bit ARM the NEON kernels are always used. `cerberus_agent.simd_backend()` says which one is active, and `CERBERUS_SIMD=scalar` forces the plain path.
+
+## Development
+
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 
-ctest --test-dir build                  # C and C++ tests
-PYTHONPATH=python pytest tests/python_tests
-```
-The build copies the native module into `python/cerberus_agent/`, so the last line works without installing. To benchmark on your own machine you can add `-DCERBERUS_NATIVE_ARCH=ON`, but never ship a build made that way.
-
----
-
-## 🚀 Running Custom Prompts & Tickets (`examples/prompt.txt` & `examples/run_prompt.py`)
-
-Cerberus includes a dedicated ticket runner that allows anyone to execute custom prompts locally.
-
-### Step 1: Type or paste your prompt into `examples/prompt.txt`
-```text
-what is the difference between C and C++?
-```
-*(or any action request like: `Use write_file tool to create test.py with content: print('Hello World!')`)*
-
-### Step 2: Run the ticket runner
-```bash
-python3 examples/run_prompt.py
+ctest --test-dir build                       # C and C++ tests
+PYTHONPATH=python pytest tests/python_tests  # Python tests
+python benchmarks/context_loop.py
+python benchmarks/vector_query.py
 ```
 
----
+The build copies the native module into `python/cerberus_agent/`, so the Python tests run without installing. Debug builds turn on AddressSanitizer. Add `-DCERBERUS_NATIVE_ARCH=ON` to tune for your own CPU, and never ship a build made that way. See [CONTRIBUTING.md](CONTRIBUTING.md) for more.
 
-## 🗺️ Release History & Next Roadmap
+## Status
 
-> [!NOTE]
-> ### 🚀 Latest Release: `v1.4.0` (Model & Memory Co-Design)
-> * **Zero-Copy Paged KV-Cache Arenas (`KVCacheArena`)**: `mmap`/`shm` page memory allocations providing 0-ms token hash prefix caching.
-> * **SQ8 SIMD Vector Quantization (`SQ8Quantizer`)**: 8-bit scalar vector quantization for **4x RAM reduction** and AVX2/NEON SIMD math.
-> * **Native C++ HNSW Graph Index (`HNSWIndex`)**: Logarithmic time $O(\log N)$ approximate nearest neighbor search over document embeddings.
-> * **Custom Prompt Ticket Runner (`examples/run_prompt.py`)**: Smart routing for action execution vs. direct local LLM reasoning.
+Known problems:
 
-### 📜 Release History
-- [x] **v1.1.0:** Semispace arena compaction, zero-copy `memoryview`, lazy thread pool.
-- [x] **v1.2.0:** Dynamic AST Parsing (`OutputParser`), Dynamic MCP Tool Registry (`DynamicToolRegistry`), Native C Shared Memory (`ca_shm_t`).
-- [x] **v1.3.0:** Hierarchical C++ Swarm Orchestrator (`SwarmOrchestrator`), Embedded SIMD Vector Memory (`VectorBuffer`), Lockless Event Ring Telemetry (`ca_ringbuf_t`).
-- [x] **v1.4.0 (Latest Release):**
-  - **Zero-Copy Paged KV-Cache Arenas (`KVCacheArena`):** `mmap` / POSIX `shm` page memory with 64-bit token hash prefix caching.
-  - **SQ8 & HNSW Quantized Vector Memory:** 8-bit scalar vector quantization (`SQ8Quantizer`) for 4x memory compression and C++ HNSW graph indexing (`HNSWIndex`) for $O(\log N)$ vector search.
+- SQ8 keeps the float vectors as well as the 8-bit codes, so it uses 25% more memory than plain float32 instead of a quarter of it.
+- HNSW is slow to build and has low recall at its defaults.
+- The prompt the context buffer renders has no role labels and does not include tool names.
+- `run_llm()` makes a single tool call per task.
+- The NEON code has been compiled and is tested in CI on ARM64, but has not run on real hardware by me yet.
+- Not published to PyPI.
 
-### 🔮 Future Theoretical Roadmap
+Ideas, none started: a llama.cpp adapter for the KV-cache pages, an OpenAI-compatible client, network transport between agents, and sandboxed tool execution.
 
-```mermaid
-graph LR
-    v1_4["v1.4.0 (Current)<br/>Paged KV-Cache Arenas & SQ8 HNSW Index"] --> v1_5["v1.5.0: Distributed Swarms<br/>io_uring Network IPC & Raft Consensus"]
-    v1_5 --> v2_0["v2.0.0: Next-Gen Engine<br/>Wasm Micro-Sandboxes & Speculative ToT Engine"]
-```
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each version and [DOCUMENTATION.md](DOCUMENTATION.md) for the design notes.
 
-#### 📍 **Phase 2: Distributed Swarms & Network Systems (v1.5.0 — Upcoming)**
-- [ ] **Kernel-Bypassing Network IPC (`io_uring`):** High-throughput, low-latency inter-agent distributed networking using Linux `io_uring` for sub-microsecond cross-node agent communication.
-- [ ] **Deterministic Replay & Raft Swarm Consensus:** Embedded C++ Raft protocol for swarm state consistency and instant differential memory arena snapshot replay.
+## License
 
-#### 📍 **Phase 3: Secure Execution & Speculative Engine (v2.0.0)**
-- [ ] **Wasm Micro-Sandboxed Tool Execution (`ca_wasm_t`):** Embedded zero-overhead WebAssembly runtime (Wasmtime/Wasmer C API) inside `ca_exec_t` for secure, zero-fork tool execution.
-- [ ] **Speculative Tree-of-Thought (ToT) Engine:** Multi-threaded parallel reasoning path evaluation where losing branch memory arenas are instantly reclaimed via $O(1)$ semispace arena resets.
-
----
-
-## 📄 License
-
-Cerberus is distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
+MIT. See [LICENSE](LICENSE).

@@ -10,6 +10,11 @@ All notable changes to the **Cerberus** framework are documented here.
 - The build no longer uses `-march=native`, so binaries run on any CPU of their architecture. AVX2 (x86-64) and NEON (64-bit ARM) kernels are picked when the program starts. `cerberus_agent.simd_backend()` reports the choice and `CERBERUS_SIMD=scalar` forces the plain path. `-DCERBERUS_NATIVE_ARCH=ON` brings the old behaviour back for local benchmarking.
 - Fixed the NEON quantizer reading up to four bytes past the end of the code buffer.
 - The C and C++ tests keep `assert()` on in Release builds (it was compiled out before, so nothing was being checked), and two out-of-date checks were corrected. The C++ suite also runs once more with the scalar kernels.
+- The library no longer prints progress messages by default. Set `CERBERUS_VERBOSE=1` or call `cerberus_agent.set_verbose(True)` to get them back. The `cerberus` command still shows progress unless you pass `--quiet`.
+- Replaced the benchmark scripts, which no longer ran, with `benchmarks/context_loop.py`, `benchmarks/vector_query.py` and a native `bench_native` target (`-DCERBERUS_BUILD_BENCHMARKS=ON`). They compare against a plain Python baseline and numpy, and report memory and recall as well as speed.
+- Rewrote the README and `DOCUMENTATION.md`. Removed claims the code does not back up: the 4x memory saving from SQ8 (it uses about a quarter more), llama.cpp and vLLM cache sharing (there is no integration), and the 270,000 "agent iterations" figure (it measured context buffer appends).
+- Added `examples/quickstart.py`, an offline example with a scripted planner, and renamed `test_local_llm.py` to `ollama_agent.py`.
+- Removed `bench.gif`, which showed the old benchmark.
 
 ---
 
