@@ -38,7 +38,7 @@ minimum-version = "build-system.requires"
 cmake.version = ">=3.18"
 cmake.build-type = "Release"
 wheel.packages = ["python/geryon"]
-sdist.exclude = [".github"]
+sdist.exclude = [".github", "assets"]
 
 [tool.scikit-build.cmake.define]
 GERYON_BUILD_TESTS = "OFF"

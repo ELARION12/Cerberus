@@ -1,3 +1,5 @@
+![Geryon: three layers, C11 core, C++17 engine and Python API, on one shared base](https://raw.githubusercontent.com/ELARION12/Geryon/main/assets/geryon-banner.png)
+
 # Geryon
 
 Geryon is a lightweight agent framework for running tool-calling agents on local language models. A C11 core and a C++17 engine handle the conversation memory, tool dispatch and vector search, and a Python API sits on top. It is aimed at small Linux machines, such as a Raspberry Pi or a mini PC, where start-up time and memory matter.

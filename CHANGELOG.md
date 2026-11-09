@@ -2,6 +2,10 @@
 
 All notable changes to Geryon, which was called Cerberus until version 1.5.0. Newest first.
 
+## [Unreleased]
+
+- Added a banner image to the top of the README (`assets/geryon-banner.png`).
+
 ## [v1.6.0] - 2026-11-09
 
 Renamed from Cerberus to Geryon. `cerberus` on PyPI is a data-validation library and several well-known projects share the name, which made this one hard to find. Apart from the rename and removing unused files, nothing else changed.
