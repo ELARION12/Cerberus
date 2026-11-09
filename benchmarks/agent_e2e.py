@@ -124,6 +124,16 @@ def standalone_ollama_client():
     return mod.OllamaClient
 
 
+BUILT_IN_TOOLS = ("shell", "read_file", "write_file", "echo")
+
+
+def only_benchmark_tools(agent):
+    """The engine ships four built-in tools. Remove them so both loops offer the
+    model exactly the same tools, and so a small model cannot run shell commands."""
+    for name in BUILT_IN_TOOLS:
+        agent.tools.remove_tool(name)
+
+
 def peak_mb():
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
 
@@ -174,6 +184,7 @@ def child_cerberus(cfg):
 
     client = timed_client_class(OllamaClient)(model=cfg["model"], host=cfg["host"], timeout=120)
     agent = Agent(name="E2E", num_threads=1, load_defaults=False, llm_client=client, max_steps=MAX_STEPS)
+    only_benchmark_tools(agent)
     for name, (desc, fn) in TOOLS.items():
         def make(fn):
             def tool(inp):
@@ -187,7 +198,13 @@ def child_cerberus(cfg):
                 return out
             return tool
         agent.add_tool(name, desc, make(fn))
-    return run_tasks(cfg, client, lambda task: agent.run_llm(task, max_steps=MAX_STEPS))
+    system_text = cfg["context_prefix"][1:-1]       # the agent starts every conversation with this line
+
+    def reset():
+        agent.context.clear()
+        agent.context.add_system(system_text)
+
+    return run_tasks(cfg, client, lambda task: agent.run_llm(task, max_steps=MAX_STEPS), reset)
 
 
 def child_plain(cfg):
@@ -214,13 +231,18 @@ def child_plain(cfg):
             state["context"] += f"[TOOL:ERROR: {text}\n"
         return "Max steps reached without completion."
 
-    return run_tasks(cfg, client, run)
+    def reset():
+        state["context"] = cfg["context_prefix"]
+
+    return run_tasks(cfg, client, run, reset)
 
 
-def run_tasks(cfg, client, run):
+def run_tasks(cfg, client, run, reset=None):
     client.generate("Say OK.")      # load the model before timing anything
     rows = []
     for task, expected in TASKS * cfg["repeats"]:
+        if reset is not None and cfg["fresh"]:
+            reset()
         client.model_seconds, client.calls = 0.0, 0
         t = time.perf_counter()
         try:
@@ -256,6 +278,7 @@ def capture_prompt_shape(cfg):
 
     def build(rec, extra=None):
         agent = Agent(name="E2E", num_threads=1, load_defaults=False, llm_client=rec, max_steps=MAX_STEPS)
+        only_benchmark_tools(agent)
         for name, (desc, fn) in TOOLS.items():
             agent.add_tool(name, desc, lambda inp: _ok("x"))
         if extra:
@@ -326,6 +349,7 @@ def main():
     ap.add_argument("--host", default="http://localhost:11434")
     ap.add_argument("--rounds", type=int, default=1, help="how many times to repeat the A B B A order")
     ap.add_argument("--repeats", type=int, default=1, help="how many times each child runs the task list")
+    ap.add_argument("--fresh", action="store_true", help="start every task with an empty conversation")
     ap.add_argument("--child", choices=["cerberus", "plain"], help=argparse.SUPPRESS)
     ap.add_argument("--config", help=argparse.SUPPRESS)
     args = ap.parse_args()
@@ -341,7 +365,7 @@ def main():
     if not probe.is_alive():
         sys.exit(f"No Ollama server at {args.host}. Start one with: ollama serve")
 
-    cfg = {"model": args.model, "host": args.host, "repeats": args.repeats}
+    cfg = {"model": args.model, "host": args.host, "repeats": args.repeats, "fresh": args.fresh}
     capture_prompt_shape(cfg)
     probe.generate("Say OK.")       # make sure the model is loaded before the first child starts
     server_mb = ollama_rss_mb()
@@ -353,7 +377,8 @@ def main():
     print(f"machine : {cpu_name()}, {os.cpu_count()} threads, Python {platform.python_version()}")
     print(f"model   : {args.model} via Ollama at {args.host} (server uses about {server_mb:.0f} MB)")
     print(f"workload: {len(TASKS)} tasks x {args.repeats}, up to {MAX_STEPS} planner calls each, "
-          f"order cerberus/plain/plain/cerberus x {args.rounds}\n")
+          f"order cerberus/plain/plain/cerberus x {args.rounds}")
+    print("context : " + ("fresh for every task" if args.fresh else "one running conversation per process") + "\n")
 
     results = {"cerberus": [], "plain": []}
     for _ in range(args.rounds):
@@ -362,6 +387,14 @@ def main():
             results[kind].append(spawn(kind, cfg_path))
     os.unlink(cfg_path)
 
+    print()
+    print("per run (success / tasks, planner calls per task):")
+    for kind in ("cerberus", "plain"):
+        parts = []
+        for res in results[kind]:
+            n_ok = sum(r["ok"] for r in res["rows"])
+            parts.append(f"{n_ok}/{len(res['rows'])} ({statistics.mean(r['calls'] for r in res['rows']):.2f})")
+        print(f"  {kind:<9}" + "   ".join(parts))
     print()
     print(f"{'':<10}{'success':>9}{'ms/task':>10}{'model ms':>10}{'other ms':>10}{'calls/task':>12}{'agent MB':>10}")
     for kind in ("cerberus", "plain"):

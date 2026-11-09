@@ -104,7 +104,18 @@ AVX2 is about 4 times faster than the scalar path. A plain numpy matrix product 
 
 **Native code** (`bench_native`, build with `-DCERBERUS_BUILD_BENCHMARKS=ON`). One arena allocation takes about 2 ns, and adding a 100 character message to the context buffer about 75 ns.
 
-**Not measured yet:** end to end with a real model. `benchmarks/agent_e2e.py` runs the same tasks through `run_llm()` and through a minimal Python loop against an Ollama model, with identical prompts, and reports success rate, time and memory. Results will go here once it has run.
+**With a real model, as a control** (`benchmarks/agent_e2e.py`, raw output in [`benchmarks/results/`](benchmarks/results/)). Ollama running `qwen2.5:0.5b` on the same laptop, 16 small tasks (word count, add, reverse, uppercase), 64 task runs per row. `run_llm()` is compared with a minimal Python loop that sends the model byte-identical prompts, so this shows whether the native layers add or cost anything. It is not a comparison with other agent frameworks.
+
+| | tasks correct | ms per task | time outside the model | agent process memory |
+|---|---|---|---|---|
+| Cerberus `run_llm()`, fresh context per task | 60 of 64 | 575 | 0.1 ms | 28.9 MB |
+| Plain Python loop, fresh context per task | 60 of 64 | 579 | 0.0 ms | 28.4 MB |
+
+The two are the same to within noise: the model decides accuracy and almost all of the time, and Cerberus adds about 0.1 ms per step. Cerberus runs inside Python, so the interpreter sets the floor for memory and Cerberus cannot go below plain Python on its own.
+
+When all 16 tasks share one running conversation instead, both loops fall to 23 of 64 correct and about 2.1 s per task. The 0.5B model cannot cope with unrelated earlier tasks piled into its prompt, and the prompt format makes it worse (see the status section).
+
+Not measured yet: other agent frameworks, long-run memory growth, and anything on a Raspberry Pi.
 
 I have not run these on a Raspberry Pi yet. The ARM64 build is compiled and tested in CI, and Pi numbers will be added here when I have them.
 
@@ -140,7 +151,8 @@ Known problems:
 
 - SQ8 keeps the float vectors as well as the 8-bit codes, so it uses 25% more memory than plain float32 instead of a quarter of it.
 - HNSW is slow to build and has low recall at its defaults.
-- The prompt the context buffer renders has no role labels and does not include tool names.
+- The prompt the context buffer renders has no role labels and does not include tool names. With a small model this hurts once a conversation holds several tasks.
+- The built-in `shell` tool runs whatever command the model picks, with your permissions and no sandbox. Remove it with `agent.tools.remove_tool("shell")` if you do not want that.
 - `run_llm()` makes a single tool call per task.
 - The NEON code has been compiled and is tested in CI on ARM64, but has not run on real hardware by me yet.
 - Not published to PyPI.

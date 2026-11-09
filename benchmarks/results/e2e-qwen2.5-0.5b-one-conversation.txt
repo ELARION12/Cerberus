@@ -1,0 +1,39 @@
+machine : Intel(R) Core(TM) i5-10310U CPU @ 1.70GHz, 8 threads, Python 3.12.14
+model   : qwen2.5:0.5b via Ollama at http://localhost:11434 (server uses about 42 MB)
+workload: 16 tasks x 1, up to 5 planner calls each, order cerberus/plain/plain/cerberus x 2
+
+
+per run (success / tasks, planner calls per task):
+  cerberus 7/16 (2.50)   5/16 (3.00)   6/16 (2.50)   5/16 (3.00)
+  plain    7/16 (1.88)   4/16 (2.75)   6/16 (2.75)   6/16 (2.75)
+
+            success   ms/task  model ms  other ms  calls/task  agent MB
+cerberus     23/64       2091      2091       0.1        2.75      28.9
+plain        23/64       2134      2134       0.0        2.53      28.5
+
+wrong or failed answers:
+  cerberus  'Count the words in: one two three four five six'      got 'ONE TWO THREE FOUR FIVE SIX' (+3 more)
+  cerberus  "How many words does 'to be or not to be that is th"   got 'TO BE OR NOT TO BE THAT IS THE QUESTION' (+3 more)
+  cerberus  "How many words are in 'a b c'?"                       got 'A B C' (+3 more)
+  cerberus  'What is 17 plus 25?'                                  got 'Max steps reached without completion.' (+3 more)
+  cerberus  'Sum of 9 and 14?'                                     got 'Max steps reached without completion.' (+3 more)
+  cerberus  "Convert 'hello world' to uppercase"                   got 'Max steps reached without completion.' (+3 more)
+  cerberus  'Make this uppercase: cerberus'                        got 'Max steps reached without completion.' (+3 more)
+  cerberus  'Shout this: good morning'                             got 'Max steps reached without completion.' (+3 more)
+  cerberus  "Uppercase the text 'edge devices'"                    got 'Max steps reached without completion.' (+3 more)
+  cerberus  'Reverse this word: hello'                             got 'Max steps reached without completion.' (+1 more)
+  cerberus  "Reverse 'abc123'"                                     got 'Max steps reached without completion.' (+2 more)
+  plain     'Count the words in: one two three four five six'      got 'ONE TWO THREE FOUR FIVE SIX' (+3 more)
+  plain     "How many words does 'to be or not to be that is th"   got 'TO BE OR NOT TO BE THAT IS THE QUESTION' (+3 more)
+  plain     "How many words are in 'a b c'?"                       got 'A B C' (+3 more)
+  plain     'What is 17 plus 25?'                                  got 'Max steps reached without completion.' (+3 more)
+  plain     'Sum of 9 and 14?'                                     got 'Max steps reached without completion.' (+3 more)
+  plain     "Convert 'hello world' to uppercase"                   got 'Max steps reached without completion.' (+3 more)
+  plain     'Make this uppercase: cerberus'                        got 'EXCEPTION: timed out' (+3 more)
+  plain     'Shout this: good morning'                             got 'EXCEPTION: timed out' (+3 more)
+  plain     "Uppercase the text 'edge devices'"                    got 'EXCEPTION: timed out' (+3 more)
+  plain     'What is 1000 plus 1?'                                 got 'Max steps reached without completion.' (+1 more)
+  plain     'Reverse this word: hello'                             got 'Max steps reached without completion.' (+1 more)
+  plain     "Reverse 'abc123'"                                     got 'EXCEPTION: timed out'
+
+other ms = total time minus time spent waiting for the model (parsing, tools, loop, prompt building).
