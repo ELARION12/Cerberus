@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Plain CMake builds: C and C++ tests, plus the Python tests against the
+  # module the build drops into python/cerberus_agent/.
+  native:
+    name: ${{ matrix.os }} / ${{ matrix.cc }} / ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+        cc: [gcc]
+        build_type: [Release]
+        include:
+          - { os: ubuntu-24.04,     cc: clang, build_type: Release }
+          # Debug keeps assert() on and turns on AddressSanitizer
+          - { os: ubuntu-24.04,     cc: gcc,   build_type: Debug }
+          - { os: ubuntu-24.04-arm, cc: gcc,   build_type: Debug }
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cc == 'clang' && 'clang++' || 'g++' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Python tools
+        run: python -m pip install pybind11 pytest
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DPython3_EXECUTABLE="$(which python)"
+          -Dpybind11_DIR="$(python -m pybind11 --cmakedir)"
+
+      # The AddressSanitizer build only covers the C and C++ tests. Loading an
+      # ASan-built Python module would need LD_PRELOAD tricks for no real gain.
+      - name: Build
+        run: |
+          if [ "${{ matrix.build_type }}" = "Debug" ]; then
+            cmake --build build --parallel --target test_c_core test_cpp_engine
+          else
+            cmake --build build --parallel
+          fi
+
+      - name: C and C++ tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Python tests
+        if: matrix.build_type == 'Release'
+        run: PYTHONPATH=python python -m pytest tests/python_tests -q
+
+      - name: Report the vector backend
+        if: matrix.build_type == 'Release'
+        run: |
+          PYTHONPATH=python python -c "import cerberus_agent as c; print('simd backend:', c.simd_backend())"
+
+      # First place the NEON kernels actually run
+      - name: NEON must be active on ARM
+        if: matrix.build_type == 'Release' && runner.arch == 'ARM64'
+        run: |
+          test "$(PYTHONPATH=python python -c 'import cerberus_agent as c; print(c.simd_backend())')" = "neon"
+
+  # What a user gets from "pip install .": build the wheel, install it away
+  # from the source tree and run the tests against the installed copy.
+  package:
+    name: pip install / py${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+        python: ["3.9", "3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/venv/bin/python" -m pip install . pytest
+
+      - name: Tests against the installed package
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" -c "import cerberus_agent as c; print(c.__file__); print('simd backend:', c.simd_backend())"
+          "$RUNNER_TEMP/venv/bin/python" -m pytest "$GITHUB_WORKSPACE/tests/python_tests" -q
+
+      - name: The command line tool starts
+        run: '"$RUNNER_TEMP/venv/bin/cerberus" --version'
