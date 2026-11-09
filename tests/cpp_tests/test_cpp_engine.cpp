@@ -160,7 +160,7 @@ void test_context_buffer() {
 
     assert(ctx.messageCount() == 4);
     std::string prompt(ctx.buildPrompt());
-    assert(prompt.find("TOOL:calculator") != std::string::npos);
+    assert(prompt.find("TOOL:4") != std::string::npos);
 
     printf("[TEST] ContextBuffer PASSED ✅\n");
 }
@@ -180,10 +180,10 @@ void test_kv_cache_arena() {
     auto hit = kv.lookupPrefix(sys_prompt);
     assert(hit != nullptr);
     assert(hit->block_id == block1->block_id);
-    assert(hit->ref_count() == 3);
+    assert(hit->ref_count.load() == 2);  /* one for the allocation, one for the lookup */
 
     kv.releaseBlock(block1->block_id);
-    kv.releaseBlock(block1->block_id);
+    assert(kv.activeBlocks() == 1);
     kv.releaseBlock(block1->block_id);
 
     assert(kv.activeBlocks() == 0);
