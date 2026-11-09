@@ -37,6 +37,21 @@ def make_data(n, dim, queries, seed=1):
     return rows, qs
 
 
+def load_cerberus():
+    """Use the installed package if there is one, else the source tree."""
+    try:
+        import cerberus_agent as ca
+        if ca._BACKEND_AVAILABLE:
+            return ca
+    except ImportError:
+        pass
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "python"))
+    for name in [m for m in sys.modules if m.startswith("cerberus_agent")]:
+        del sys.modules[name]
+    import cerberus_agent as ca
+    return ca
+
+
 def timed(fn, qs):
     fn(qs[0])  # warm up
     best = float("inf")
@@ -51,8 +66,7 @@ def timed(fn, qs):
 def child(impl, n, dim, nq):
     rows, qs = make_data(n, dim, nq)
     if impl.startswith("cerberus"):
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "python"))
-        import cerberus_agent as ca
+        ca = load_cerberus()
 
         vb = ca.VectorBuffer(dim=dim, max_vectors=n)
         if impl == "cerberus-sq8":

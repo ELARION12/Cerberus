@@ -49,9 +49,23 @@ def assistant_text(i):
     return f"Result {i}: Data processed successfully."
 
 
-def run_cerberus(n):
+def load_cerberus():
+    """Use the installed package if there is one, else the source tree."""
+    try:
+        import cerberus_agent as ca
+        if ca._BACKEND_AVAILABLE:
+            return ca
+    except ImportError:
+        pass
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "python"))
-    from cerberus_agent._cerberus_core import ContextBuffer
+    for name in [m for m in sys.modules if m.startswith("cerberus_agent")]:
+        del sys.modules[name]
+    import cerberus_agent as ca
+    return ca
+
+
+def run_cerberus(n):
+    ContextBuffer = load_cerberus()._cerberus_core.ContextBuffer
 
     after_import = rss_mb()
     ctx = ContextBuffer(1024 * 1024, 1024 * 1024, BUDGET_CHARS // 4)
@@ -131,12 +145,10 @@ def installed(impl):
         except ImportError:
             return False
     if impl == "cerberus":
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "python"))
         try:
-            import cerberus_agent
+            return load_cerberus()._BACKEND_AVAILABLE
         except ImportError:
             return False
-        return cerberus_agent._BACKEND_AVAILABLE
     return True
 
 
