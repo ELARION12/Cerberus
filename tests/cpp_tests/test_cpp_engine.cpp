@@ -160,7 +160,10 @@ void test_context_buffer() {
 
     assert(ctx.messageCount() == 4);
     std::string prompt(ctx.buildPrompt());
-    assert(prompt.find("TOOL:4") != std::string::npos);
+    assert(prompt == "system: You are a helpful agent.\n"
+                     "user: What is 2 + 2?\n"
+                     "assistant: The answer is 4.\n"
+                     "tool calculator: 4\n");
 
     printf("[TEST] ContextBuffer PASSED ✅\n");
 }

@@ -370,11 +370,23 @@ class Agent:
                 f"state={self.state_name} "
                 f"tools={len(self.tool_names)}>")
 
-    def run_llm(self, task: str, max_steps: int = 5) -> str:
+    # What the planner is told about the pseudo-tool that ends a multi-step run
+    FINAL_TOOL = "final_answer"
+    FINAL_SPEC = "Finish the task. args = the final answer, written out in full"
+
+    def run_llm(self, task: str, max_steps: int = 5, multi_step: bool = False) -> str:
         """
-        Same THINK->PLAN->ACT->REFLECT loop as run(), but Ollama does the
-        planning instead of the C++ keyword planner. Only uses already-
-        exposed primitives (context()/tools()) - no rebuild required.
+        Same THINK->PLAN->ACT->REFLECT loop as run(), but a language model does
+        the planning instead of the C++ keyword planner.
+
+        multi_step=False (default): the first tool that succeeds ends the run and
+        its output is returned. A failed tool puts its error in the conversation
+        and the model plans again.
+
+        multi_step=True: the model may call several tools one after another. Each
+        result goes back into the conversation, and the run ends when the model
+        calls final_answer, whose argument is returned. If the steps run out, the
+        last tool result is returned.
         """
         ctx = self._agent.context()
         tools = self._agent.tools()
@@ -400,7 +412,10 @@ class Agent:
             name: self._tool_specs.get(name, "No description available.")
             for name in tools.tool_names()
         }
+        if multi_step:
+            active_specs[self.FINAL_TOOL] = self.FINAL_SPEC
 
+        finished = False
         for step in range(1, max_steps + 1):
             prompt = bytes(ctx.build_prompt()).decode("utf-8", errors="replace")
             plan_str = self.llm.plan(
@@ -414,6 +429,13 @@ class Agent:
             tool_name = plan_str[:sep] if sep != -1 else plan_str
             tool_args = plan_str[sep + 1:] if sep != -1 else ""
 
+            if multi_step and tool_name == self.FINAL_TOOL:
+                ctx.add_assistant(tool_args)
+                return tool_args.strip()
+
+            if multi_step:
+                ctx.add_assistant(f"call {tool_name}({tool_args})")
+
             tool_input = cpp.ToolInput()
             tool_input.name = tool_name
             tool_input.args = tool_args
@@ -423,10 +445,14 @@ class Agent:
             if output.success:
                 ctx.add_tool_result(tool_name, output.result)
                 final_output = output.result
-                break
+                if not multi_step:
+                    finished = True
+                    break
+                continue
             # On failure, feed the error back into context so the LLM can recover
             ctx.add_tool_result(tool_name, f"ERROR: {output.error}")
-        else:
+
+        if not finished and not (multi_step and final_output):
             final_output = "Max steps reached without completion."
 
         return final_output

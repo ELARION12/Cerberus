@@ -96,3 +96,78 @@ def test_planner_is_told_what_a_custom_tool_does():
 
     agent.run_llm("how many words?")
     assert seen["word_count"] == "Count the words in the text"
+
+
+def test_prompt_labels_each_line_with_its_role_and_tool_name():
+    from cerberus_agent._cerberus_core import ContextBuffer
+    ctx = ContextBuffer(65536, 65536, 4096)
+    ctx.add_system("be brief")
+    ctx.add_user("count the words")
+    ctx.add_assistant("call word_count(a b)")
+    ctx.add_tool_result("word_count", "2")
+    assert bytes(ctx.build_prompt()).decode() == (
+        "system: be brief\n"
+        "user: count the words\n"
+        "assistant: call word_count(a b)\n"
+        "tool word_count: 2\n"
+    )
+
+
+def counting_agent(planner):
+    agent = Agent(name="M", num_threads=1, llm_client=planner)
+
+    @agent.tool("add_one", "Add one to a number. args = the number")
+    def add_one(inp):
+        out = ToolOutput()
+        out.success, out.result = True, str(int(inp.args) + 1)
+        return out
+
+    return agent
+
+
+def test_multi_step_chains_tools_until_final_answer():
+    planner = RecordingPlanner(["add_one|1", "add_one|2", "final_answer|the answer is 3"])
+    answer = counting_agent(planner).run_llm("add one twice to 1", multi_step=True)
+    assert answer == "the answer is 3"
+    assert len(planner.contexts) == 3
+    # the third plan call sees both earlier calls and their results, labelled
+    last = planner.contexts[2]
+    assert "assistant: call add_one(1)" in last
+    assert "tool add_one: 2" in last
+    assert "tool add_one: 3" in last
+
+
+def test_multi_step_offers_final_answer_but_single_step_does_not():
+    offered = []
+
+    class Planner:
+        def plan(self, task, tool_specs, context):
+            offered.append(sorted(tool_specs))
+            return "final_answer|x" if "final_answer" in tool_specs else "add_one|1"
+
+        def is_alive(self):
+            return True
+
+    counting_agent(Planner()).run_llm("t", multi_step=True)
+    counting_agent(Planner()).run_llm("t")
+    assert "final_answer" in offered[0]
+    assert "final_answer" not in offered[1]
+
+
+def test_multi_step_returns_the_last_result_when_steps_run_out():
+    planner = RecordingPlanner(["add_one|1", "add_one|2", "add_one|3"])
+    answer = counting_agent(planner).run_llm("keep going", max_steps=3, multi_step=True)
+    assert answer == "4"
+
+
+def test_multi_step_recovers_from_a_failing_tool():
+    planner = RecordingPlanner(["flaky|a", "flaky|b", "final_answer|recovered"])
+    answer = flaky_agent(planner).run_llm("do it", multi_step=True)
+    assert answer == "recovered"
+    assert "disk is full" in planner.contexts[1]
+
+
+def test_single_step_behaviour_is_unchanged():
+    planner = RecordingPlanner(["add_one|1"])
+    assert counting_agent(planner).run_llm("add one to 1") == "2"
+    assert len(planner.contexts) == 1

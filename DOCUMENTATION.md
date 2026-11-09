@@ -40,7 +40,7 @@ A third arena, `scratch_`, holds the rendered prompt. Each `buildPrompt()` call 
 
 When the estimated token count goes over the budget, the oldest non-system messages are dropped.
 
-Prompt format today: each message is written as `[`, then `TOOL:` for tool results only, then the text, then a newline. There are no role labels for system, user or assistant messages, and the tool name is not included. This is enough for simple planners and is likely to change.
+Prompt format: one line per message, labelled with its role: `system: ...`, `user: ...`, `assistant: ...`, and `tool <name>: ...` for tool results. The label lets a model tell a request from a tool result, which matters once a conversation holds more than one step.
 
 ### Vector memory (`VectorBuffer`)
 
@@ -88,7 +88,10 @@ This is the allocator only. Nothing connects it to llama.cpp, vLLM or any other 
 
 ## Agent loop
 
-`Agent.run_llm(task)` is the real loop. It puts the task in the context buffer, asks the model for a plan in the form `tool_name|arguments`, runs that tool, and returns its output. If the tool fails, the error is added to the context and the model is asked again, up to `max_steps` times. The first successful tool call ends the run. There is no chaining of several tools and no final answer written by the model.
+`Agent.run_llm(task)` is the real loop. It puts the task in the context buffer, asks the model for a plan in the form `tool_name|arguments`, runs that tool, and puts the result in the context. There are two modes.
+
+- **Default (`multi_step=False`).** The first successful tool call ends the run and its output is returned. If a tool fails, the error is added to the context and the model is asked again, up to `max_steps` times.
+- **`multi_step=True`.** The model can call several tools one after another. Each call and result goes back into the conversation, and the model ends the run by calling `final_answer`, whose argument is returned. If the steps run out first, the last tool result is returned.
 
 The model client is any object with `plan(task, tool_specs, context)` and `is_alive()`. `OllamaClient` is the one provided.
 

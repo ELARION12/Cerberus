@@ -67,7 +67,7 @@ The library prints nothing by default. Set `CERBERUS_VERBOSE=1` or call `cerberu
 |---|---|---|
 | Context buffer | Keeps a rolling conversation inside a token budget, in arena memory that is compacted instead of grown. | Works, tested, benchmarked below. |
 | Tools | Register Python functions as tools, or use the built-in shell and file tools. The registry can add and remove tools while the agent runs, which is how MCP servers are plugged in (needs the `mcp` extra). | The registry is tested. The MCP bridge is not covered by tests yet. |
-| Agent loop with a local model | `run_llm()` asks the model for a tool call, runs it, and returns the result. If the tool fails, the error goes back to the model for another try. | Works, but it is one tool call per task. It does not chain steps or write a final answer. |
+| Agent loop with a local model | `run_llm()` asks the model for a tool call, runs it, and returns the result. If the tool fails, the error goes back to the model for another try. With `multi_step=True` the model can chain several tools and finish with `final_answer`. | Works. The default is one tool call per task. |
 | Vector memory | Brute-force cosine search over stored embeddings with AVX2 or NEON kernels, chosen at run time. | Works. |
 | 8-bit vectors (SQ8) | Stores 8-bit codes next to the float vectors. | Does not save memory yet, see below. |
 | HNSW index | Approximate nearest-neighbour graph. | Experimental: slow to build and low recall at the defaults. |
@@ -151,9 +151,7 @@ Known problems:
 
 - SQ8 keeps the float vectors as well as the 8-bit codes, so it uses 25% more memory than plain float32 instead of a quarter of it.
 - HNSW is slow to build and has low recall at its defaults.
-- The prompt the context buffer renders has no role labels and does not include tool names. With a small model this hurts once a conversation holds several tasks.
 - The built-in `shell` tool runs whatever command the model picks, with your permissions and no sandbox. Remove it with `agent.tools.remove_tool("shell")` if you do not want that.
-- `run_llm()` makes a single tool call per task.
 - The NEON code has been compiled and is tested in CI on ARM64, but has not run on real hardware by me yet.
 - Not published to PyPI.
 

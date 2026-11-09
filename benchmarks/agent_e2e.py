@@ -198,7 +198,7 @@ def child_cerberus(cfg):
                 return out
             return tool
         agent.add_tool(name, desc, make(fn))
-    system_text = cfg["context_prefix"][1:-1]       # the agent starts every conversation with this line
+    system_text = cfg["context_prefix"][len("system: "):-1]   # the agent starts every conversation with this line
 
     def reset():
         agent.context.clear()
@@ -214,7 +214,7 @@ def child_plain(cfg):
     state = {"context": cfg["context_prefix"]}     # grows across tasks, like the agent's context
 
     def run(task):
-        state["context"] += f"[{task}\n"
+        state["context"] += f"user: {task}\n"
         for _ in range(MAX_STEPS):
             plan_str = client.plan(task, specs, state["context"])
             sep = plan_str.find("|")
@@ -222,13 +222,13 @@ def child_plain(cfg):
             args = plan_str[sep + 1:] if sep != -1 else ""
             entry = TOOLS.get(name)
             if entry is None:
-                ok, text = False, f"unknown tool: {name}"
+                ok, text = False, f"Unknown tool: {name}"
             else:
                 ok, text = entry[1](args)
             if ok:
-                state["context"] += f"[TOOL:{text}\n"
+                state["context"] += f"tool {name}: {text}\n"
                 return text
-            state["context"] += f"[TOOL:ERROR: {text}\n"
+            state["context"] += f"tool {name}: ERROR: {text}\n"
         return "Max steps reached without completion."
 
     def reset():
@@ -295,7 +295,7 @@ def capture_prompt_shape(cfg):
         out.success, out.error = False, "ERR_PLACEHOLDER"
         return out
 
-    user_line = "[TASK_PLACEHOLDER\n"
+    user_line = "user: TASK_PLACEHOLDER\n"
 
     first = Recorder(["word_count|x"])
     build(first).run_llm("TASK_PLACEHOLDER")
@@ -306,13 +306,13 @@ def capture_prompt_shape(cfg):
     retry = Recorder(["boom|x", "word_count|x"])
     build(retry, ("boom", "always fails", _fail)).run_llm("TASK_PLACEHOLDER")
     assert retry.contexts[0] == ctx0
-    assert retry.contexts[1] == prefix + user_line + "[TOOL:ERROR: ERR_PLACEHOLDER\n", retry.contexts[1]
+    assert retry.contexts[1] == prefix + user_line + "tool boom: ERROR: ERR_PLACEHOLDER\n", retry.contexts[1]
 
     two = Recorder(["word_count|x", "word_count|x"])
     agent = build(two)
     agent.run_llm("A")
     agent.run_llm("B")
-    assert two.contexts[1] == prefix + "[A\n[TOOL:x\n[B\n", two.contexts[1]
+    assert two.contexts[1] == prefix + "user: A\ntool word_count: x\nuser: B\n", two.contexts[1]
 
     cfg["tool_specs"] = first.specs
     cfg["context_prefix"] = prefix

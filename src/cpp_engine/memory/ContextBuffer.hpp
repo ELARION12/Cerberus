@@ -77,15 +77,20 @@ public:
      * The arena is restored to its saved mark first so each call overwrites the
      * previous prompt — only one prompt is live at a time, matching the
      * THINK → PLAN → ACT usage pattern.
-     * Wire format: '[' ["TOOL:"] content '\n'  for each message.
+     * Wire format, one line per message:
+     *     system: <text>
+     *     user: <text>
+     *     assistant: <text>
+     *     tool <name>: <text>
      * Returned view points into arena memory; valid until the next buildPrompt() call.
      */
     std::string_view buildPrompt() {
         ca_arena_restore(scratch_, scratch_mark_);
+        if (messages_.empty()) return std::string_view();
 
         size_t total_len = 0;
         for (const auto& m : messages_) {
-            total_len += m.content.size() + (m.role == MessageRole::TOOL ? 5 : 1) + 1;
+            total_len += prefixLength(m) + m.content.size() + 1;
         }
 
         char* out = static_cast<char*>(ca_arena_alloc(scratch_, total_len));
@@ -95,11 +100,7 @@ public:
 
         char* cursor = out;
         for (const auto& m : messages_) {
-            *cursor++ = '[';
-            if (m.role == MessageRole::TOOL) {
-                std::memcpy(cursor, "TOOL:", 5);
-                cursor += 5;
-            }
+            cursor = writePrefix(cursor, m);
             std::memcpy(cursor, m.content.data(), m.content.size());
             cursor += m.content.size();
             *cursor++ = '\n';
@@ -135,6 +136,42 @@ private:
     std::deque<Message> messages_;
     size_t max_tokens_;
     size_t current_tokens_;
+
+    /* The label written in front of each message in the rendered prompt */
+    static size_t prefixLength(const Message& m) {
+        switch (m.role) {
+            case MessageRole::SYSTEM:    return 8;    /* "system: "    */
+            case MessageRole::USER:      return 6;    /* "user: "      */
+            case MessageRole::ASSISTANT: return 11;   /* "assistant: " */
+            case MessageRole::TOOL:
+                /* "tool <name>: ", or "tool: " when no name was given */
+                return 4 + (m.tool_name.empty() ? 0 : 1 + m.tool_name.size()) + 2;
+        }
+        return 0;
+    }
+
+    static char* writePrefix(char* cursor, const Message& m) {
+        const char* text = "";
+        size_t len = 0;
+        switch (m.role) {
+            case MessageRole::SYSTEM:    text = "system: ";    len = 8;  break;
+            case MessageRole::USER:      text = "user: ";      len = 6;  break;
+            case MessageRole::ASSISTANT: text = "assistant: "; len = 11; break;
+            case MessageRole::TOOL:
+                std::memcpy(cursor, "tool", 4);
+                cursor += 4;
+                if (!m.tool_name.empty()) {
+                    *cursor++ = ' ';
+                    std::memcpy(cursor, m.tool_name.data(), m.tool_name.size());
+                    cursor += m.tool_name.size();
+                }
+                text = ": ";
+                len = 2;
+                break;
+        }
+        std::memcpy(cursor, text, len);
+        return cursor + len;
+    }
 
     std::string_view copyToArena(ca_arena_t* arena, std::string_view text) {
         if (text.empty()) return {};

@@ -111,12 +111,20 @@ class OllamaClient:
         Agent::act()'s existing parser.
         """
         tools_desc = "\n".join(f"- {name}: {desc}" for name, desc in tool_specs.items())
+        chain_hint = ""
+        if "final_answer" in tool_specs:
+            chain_hint = (
+                "You can call several tools one after another. Each result "
+                "is added to the conversation below. When you have everything "
+                "you need, call final_answer with the complete answer.\n\n"
+            )
         system = (
             "You are the planning module of a local agent runtime.\n"
             "Respond with a JSON object containing exactly two fields: "
             "'tool' (the tool name to use) and 'args' (the argument "
             "string for that tool, exactly as the tool expects it - "
             "no extra quoting, no key=value syntax).\n\n"
+            f"{chain_hint}"
             f"Available tools:\n{tools_desc}\n\n"
             "Always pick the tool that actually accomplishes the task. "
             "Only use 'echo' if no other tool applies - never use it "
