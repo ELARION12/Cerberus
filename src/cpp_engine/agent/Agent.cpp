@@ -7,7 +7,7 @@
 #include <fstream>
 #include <sstream>
 
-namespace coreagent {
+namespace cerberus {
 
 Agent::Agent(const AgentConfig& config)
     : config_(config),
@@ -241,4 +241,4 @@ std::string Agent::run(const std::string& task) {
     return final_output;
 }
 
-} // namespace coreagent
+} // namespace cerberus

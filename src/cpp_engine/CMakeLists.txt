@@ -8,10 +8,10 @@ file(GLOB_RECURSE CPP_ENGINE_SOURCES
 )
 
 # Build as static library
-add_library(coreagent_cpp STATIC ${CPP_ENGINE_SOURCES})
+add_library(cerberus_cpp STATIC ${CPP_ENGINE_SOURCES})
 
 # Expose all subdirectory headers
-target_include_directories(coreagent_cpp PUBLIC
+target_include_directories(cerberus_cpp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/agent
     ${CMAKE_CURRENT_SOURCE_DIR}/tools
@@ -22,12 +22,12 @@ target_include_directories(coreagent_cpp PUBLIC
 )
 
 # Link against C core (inherits its include dirs too)
-target_link_libraries(coreagent_cpp PUBLIC
-    coreagent_c
+target_link_libraries(cerberus_cpp PUBLIC
+    cerberus_c
     Threads::Threads
 )
 
-target_compile_options(coreagent_cpp PRIVATE
+target_compile_options(cerberus_cpp PRIVATE
     -Wall -Wextra
 )
 

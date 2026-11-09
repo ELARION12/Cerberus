@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace coreagent {
+namespace cerberus {
 
 class Arena {
 public:
@@ -41,4 +41,4 @@ private:
     ca_arena_t* arena_ = nullptr;
 };
 
-} // namespace coreagent
+} // namespace cerberus

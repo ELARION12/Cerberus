@@ -20,7 +20,7 @@
 #include "SwarmOrchestrator.hpp"
 #include "Agent.hpp"
 
-using namespace coreagent;
+using namespace cerberus;
 
 /* ── Test: Arena RAII wrapper ────────────────────────────── */
 void test_arena_cpp() {
@@ -65,9 +65,9 @@ void test_thread_pool_cpp() {
 /* ── Test: Executor wrapper ──────────────────────────────── */
 void test_executor_cpp() {
     printf("\n[TEST] C++ Executor Wrapper\n");
-    auto r1 = Executor::shell("echo 'CoreAgent CPP'", 2000);
+    auto r1 = Executor::shell("echo 'Cerberus CPP'", 2000);
     assert(r1.ok());
-    assert(r1.stdout_data.find("CoreAgent CPP") != std::string::npos);
+    assert(r1.stdout_data.find("Cerberus CPP") != std::string::npos);
 
     auto r2 = Executor::shell("sleep 10", 300);
     assert(r2.timeout());
@@ -168,9 +168,9 @@ void test_context_buffer() {
 /* ── Test: V1.4.0 KVCacheArena ────────────────────────────── */
 void test_kv_cache_arena() {
     printf("\n[TEST] V1.4.0 KVCacheArena (Zero-Copy Paged KV-Cache)\n");
-    KVCacheArena kv(100, "/ironagent_test_kv_");
+    KVCacheArena kv(100, "/cerberus_test_kv_");
 
-    std::string sys_prompt = "<system>You are IronAgent AI assistant.</system>";
+    std::string sys_prompt = "<system>You are Cerberus AI assistant.</system>";
     auto block1 = kv.allocateBlock(sys_prompt, 8192); // 2 pages (8KB)
     assert(block1 != nullptr);
     assert(block1->page_count == 2);
@@ -283,7 +283,7 @@ void test_agent() {
 /* ── Main ────────────────────────────────────────────────── */
 int main() {
     printf("╔══════════════════════════════════════════╗\n");
-    printf("║   CoreAgent C++ Engine Tests (V1.4.0)    ║\n");
+    printf("║   Cerberus C++ Engine Tests (V1.4.0)    ║\n");
     printf("╚══════════════════════════════════════════╝\n");
 
     test_arena_cpp();

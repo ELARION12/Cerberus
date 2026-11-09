@@ -10,10 +10,10 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(__file__), "../../python"
 ))
 
-from cerberus import (
+from cerberus_agent import (
     VectorBuffer, Telemetry, SwarmResult, SwarmSummary, version
 )
-from cerberus._coreagent_cpp import TelemetryKind
+from cerberus_agent._cerberus_core import TelemetryKind
 
 
 def test_v13_version():

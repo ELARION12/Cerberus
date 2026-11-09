@@ -13,15 +13,15 @@ TOKEN_LIMIT_CHARS = 16384  # Roughly 4096 tokens
 def get_memory_mb():
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
 
-def run_coreagent_hot_loop():
-    print("=== CoreAgent Hot Loop (50,000 Iterations) ===", flush=True)
+def run_cerberus_hot_loop():
+    print("=== Cerberus Hot Loop (50,000 Iterations) ===", flush=True)
     time.sleep(1.5)  # Pause for GIF recording
 
     gc.collect()
     mem_start = get_memory_mb()
 
-    from coreagent.agent import Agent
-    from coreagent._coreagent_cpp import AgentConfig
+    from cerberus_agent.agent import Agent
+    from cerberus_agent._cerberus_core import AgentConfig
 
     config = AgentConfig()
     config.context_arena_capacity = 1024 * 1024
@@ -52,7 +52,7 @@ def run_coreagent_hot_loop():
     print(f"Added Memory (RSS): {mem_end - mem_start:.2f} MB", flush=True)
     print("==============================================\n", flush=True)
     
-    time.sleep(2.0)  # Pause to let viewer digest CoreAgent throughput
+    time.sleep(2.0)  # Pause to let viewer digest Cerberus throughput
 
 def run_langchain_hot_loop():
     print("=== LangChain Hot Loop (50,000 Iterations) ===", flush=True)
@@ -105,9 +105,9 @@ def run_langchain_hot_loop():
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         import subprocess
-        subprocess.run([sys.executable, sys.argv[0], "--coreagent"])
+        subprocess.run([sys.executable, sys.argv[0], "--cerberus"])
         subprocess.run([sys.executable, sys.argv[0], "--langchain"])
-    elif sys.argv[1] == "--coreagent":
-        run_coreagent_hot_loop()
+    elif sys.argv[1] == "--cerberus":
+        run_cerberus_hot_loop()
     elif sys.argv[1] == "--langchain":
         run_langchain_hot_loop()

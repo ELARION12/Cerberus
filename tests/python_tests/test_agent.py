@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(__file__), "../../python"
 ))
 
-from cerberus import Agent, ToolInput, ToolOutput
+from cerberus_agent import Agent, ToolInput, ToolOutput
 
 
 # ── Test 1: Agent Creation ────────────────────────────────

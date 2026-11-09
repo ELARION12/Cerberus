@@ -1,5 +1,5 @@
 """
-Bridge between CoreAgent's synchronous tool interface
+Bridge between Cerberus's synchronous tool interface
 and MCP servers, which communicate via async JSON-RPC over stdio.
 Runs a background asyncio event loop and exposes blocking synchronous methods.
 """
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     import os
     import sys
 
-    project_dir = os.path.expanduser("~/coreagent")
+    project_dir = os.getcwd()
     server_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mcp_filesystem_server.py")
 
     bridge = MCPToolBridge(

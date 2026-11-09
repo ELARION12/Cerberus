@@ -4,8 +4,8 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../python')))
 
-import cerberus
-from cerberus import KVCacheArena, VectorBuffer, __version__
+import cerberus_agent
+from cerberus_agent import KVCacheArena, VectorBuffer, __version__
 
 class TestV140Features(unittest.TestCase):
     def test_version(self):

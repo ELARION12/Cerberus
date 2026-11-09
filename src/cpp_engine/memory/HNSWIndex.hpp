@@ -23,7 +23,7 @@
 #include <mutex>
 #include "SQ8Quantizer.hpp"
 
-namespace coreagent {
+namespace cerberus {
 
 struct HNSWNode {
     uint32_t id;
@@ -248,4 +248,4 @@ private:
     }
 };
 
-} // namespace coreagent
+} // namespace cerberus

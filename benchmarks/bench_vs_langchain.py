@@ -21,8 +21,8 @@ def measure_cerberus():
     # --- START BENCHMARK TIMER ---
     start_time = time.perf_counter()
 
-    from cerberus.agent import Agent
-    from cerberus._coreagent_cpp import AgentConfig
+    from cerberus_agent.agent import Agent
+    from cerberus_agent._cerberus_core import AgentConfig
 
     config = AgentConfig()
     config.context_arena_capacity = 1024 * 1024    

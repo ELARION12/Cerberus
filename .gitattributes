@@ -1,4 +1,4 @@
-# Linguist overrides — ensure GitHub displays only IronAgent core languages (C++, C, Python, CMake)
+# Linguist overrides — ensure GitHub displays only Cerberus core languages (C++, C, Python, CMake)
 
 *.md linguist-documentation
 *.svg linguist-documentation

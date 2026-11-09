@@ -34,7 +34,7 @@
 #  define CA_SIMD_NEON 1
 #endif
 
-namespace coreagent {
+namespace cerberus {
 
 /* ── Result of a nearest-neighbour query ─────────────────────────────────── */
 struct VectorMatch {
@@ -268,4 +268,4 @@ private:
     }
 };
 
-} // namespace coreagent
+} // namespace cerberus

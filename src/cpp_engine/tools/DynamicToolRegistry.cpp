@@ -2,7 +2,7 @@
 
 #include <cstdio>
 
-namespace coreagent {
+namespace cerberus {
 
 void DynamicToolRegistry::registerMCP(const MCPToolSchema& schema,
                                       ToolFn trampoline) {
@@ -59,4 +59,4 @@ size_t DynamicToolRegistry::serverCount() const {
     return mcp_schemas_.size();
 }
 
-} // namespace coreagent
+} // namespace cerberus

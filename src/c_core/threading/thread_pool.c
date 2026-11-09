@@ -90,7 +90,7 @@ ca_thread_pool_t* ca_pool_create(uint32_t num_threads) {
     pthread_cond_init (&pool->task_available, NULL);
     pthread_cond_init (&pool->all_done,       NULL);
 
-    printf("[CoreAgent] Thread pool initialized (lazy loading active)\n");
+    printf("[Cerberus] Thread pool initialized (lazy loading active)\n");
     return pool;
 }
 
@@ -131,7 +131,7 @@ int ca_pool_submit(ca_thread_pool_t* pool, ca_task_fn fn, void* arg) {
 
         for (uint32_t i = 0; i < pool->num_threads; i++) {
             if (pthread_create(&pool->threads[i], &attr, worker_fn, pool) != 0) {
-                fprintf(stderr, "[CoreAgent] Failed to lazy-spawn thread %u\n", i);
+                fprintf(stderr, "[Cerberus] Failed to lazy-spawn thread %u\n", i);
             }
         }
         pthread_attr_destroy(&attr);
@@ -139,7 +139,7 @@ int ca_pool_submit(ca_thread_pool_t* pool, ca_task_fn fn, void* arg) {
     }
 
     if (pool->queue.count >= CA_POOL_QUEUE_SIZE) {
-        fprintf(stderr, "[CoreAgent] Task queue full!\n");
+        fprintf(stderr, "[Cerberus] Task queue full!\n");
         pthread_mutex_unlock(&pool->mutex);
         return -1;
     }

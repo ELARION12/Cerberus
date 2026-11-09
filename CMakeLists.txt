@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(CoreAgent VERSION 0.1.0 LANGUAGES C CXX)
+project(Cerberus VERSION 1.4.0 LANGUAGES C CXX)
 
 # ── Standards ─────────────────────────────────────────────
 set(CMAKE_C_STANDARD 11)
@@ -41,6 +41,6 @@ add_subdirectory(src/bindings)
 enable_testing()
 add_subdirectory(tests)
 
-message(STATUS "✅ CoreAgent configured: ${CMAKE_BUILD_TYPE}")
+message(STATUS "✅ Cerberus configured: ${CMAKE_BUILD_TYPE}")
 message(STATUS "   C compiler  : ${CMAKE_C_COMPILER}")
 message(STATUS "   C++ compiler: ${CMAKE_CXX_COMPILER}")

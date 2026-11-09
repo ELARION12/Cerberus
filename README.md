@@ -22,9 +22,9 @@ Unlike conventional Python-only agent frameworks (LangChain, AutoGen) that consu
 ```mermaid
 graph TD
     subgraph Head3["🐍 Head 3: Python3 API & Prompt Engine"]
-        API["Python Package (cerberus)"]
+        API["Python Package (cerberus_agent)"]
         Runner["Custom Prompt Runner (run_prompt.py)"]
-        Pybind["Pybind11 C++ Bridge (_coreagent_cpp)"]
+        Pybind["Pybind11 C++ Bridge (_cerberus_core)"]
     end
 
     subgraph Head2["⚡ Head 2: C++17 Reasoning & SIMD RAG Engine"]
@@ -84,7 +84,7 @@ Cerberus/
 ├── LICENSE                     # MIT License
 ├── README.md                   # Technical documentation & usage guide
 ├── CHANGELOG.md                # Release history & version notes
-├── setup.py                    # Python package setup script (pip install cerberus)
+├── setup.py                    # Python package setup script (pip install cerberus-agent)
 ├── requirements.txt            # Python dependencies
 ├── prompt.txt                  # Custom prompt ticket input file
 ├── run_prompt.py               # Custom prompt ticket executor script
@@ -121,10 +121,10 @@ Cerberus/
 │   │       └── DynamicToolRegistry.hpp/cpp # MCP tool hot-swapping registry
 │   │
 │   └── bindings/               # Pybind11 C Extensions
-│       └── pybind_main.cpp     # Pybind11 module definition (_coreagent_cpp)
+│       └── pybind_main.cpp     # Pybind11 module definition (_cerberus_core)
 │
 ├── python/                     # Head 3: Python High-Level Package
-│   └── cerberus/               # Main Python package (import cerberus)
+│   └── cerberus_agent/         # Main Python package (import cerberus_agent)
 │       ├── __init__.py         # Package exports & version definitions
 │       ├── agent.py            # High-level Python Agent class
 │       ├── cli.py              # CLI entry point (cerberus command)
@@ -236,4 +236,4 @@ graph LR
 
 ## 📄 License
 
-Cerberus is distributed under the **MIT License**. See [`LICENSE`](file:///home/elarion/Desktop/IronAgent/LICENSE) for details.
+Cerberus is distributed under the **MIT License**. See [`LICENSE`](file:///home/elarion/Desktop/Cerberus/LICENSE) for details.

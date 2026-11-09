@@ -11,7 +11,7 @@ from mcp.server.fastmcp import FastMCP
 
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path.cwd()
 
-mcp = FastMCP("CoreAgent Filesystem Server")
+mcp = FastMCP("Cerberus Filesystem Server")
 
 
 def _resolve(path: str) -> Path:

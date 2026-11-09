@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 
-namespace coreagent {
+namespace cerberus {
 
 struct ExecResult {
     std::string      stdout_data;
@@ -36,4 +36,4 @@ public:
     }
 };
 
-} // namespace coreagent
+} // namespace cerberus

@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <cstdint>
 
-namespace coreagent {
+namespace cerberus {
 
 class ThreadPool {
 public:
@@ -31,4 +31,4 @@ private:
     ca_thread_pool_t* pool_ = nullptr;
 };
 
-} // namespace coreagent
+} // namespace cerberus

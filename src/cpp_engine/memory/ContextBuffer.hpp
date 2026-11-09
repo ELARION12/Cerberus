@@ -13,7 +13,7 @@ extern "C" {
     #include "allocator.h"
 }
 
-namespace coreagent {
+namespace cerberus {
 
 enum class MessageRole { SYSTEM, USER, ASSISTANT, TOOL };
 
@@ -208,4 +208,4 @@ private:
     }
 };
 
-} // namespace coreagent
+} // namespace cerberus

@@ -8,9 +8,9 @@ file(GLOB_RECURSE C_CORE_SOURCES
 )
 
 # Build as static library
-add_library(coreagent_c STATIC ${C_CORE_SOURCES})
+add_library(cerberus_c STATIC ${C_CORE_SOURCES})
 
-target_include_directories(coreagent_c PUBLIC
+target_include_directories(cerberus_c PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/memory
     ${CMAKE_CURRENT_SOURCE_DIR}/threading
     ${CMAKE_CURRENT_SOURCE_DIR}/executor
@@ -18,9 +18,9 @@ target_include_directories(coreagent_c PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/telemetry
 )
 
-target_link_libraries(coreagent_c PUBLIC Threads::Threads)
+target_link_libraries(cerberus_c PUBLIC Threads::Threads)
 
 # Compiler warnings
-target_compile_options(coreagent_c PRIVATE
+target_compile_options(cerberus_c PRIVATE
     -Wall -Wextra -Wpedantic
 )

@@ -4,7 +4,7 @@ Cerberus AI — Bare-Metal Agent Engine (v1.4.0)
 """
 
 try:
-    from ._coreagent_cpp import (
+    from ._cerberus_core import (
         Agent         as _CppAgent,
         AgentConfig,
         AgentState,

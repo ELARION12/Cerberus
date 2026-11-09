@@ -14,14 +14,14 @@
 #include <memory>
 #include <cstdint>
 
-namespace coreagent {
+namespace cerberus {
 
 /*
  * All configuration for a single Agent instance.
  * Passed by value at construction; changing fields after creation has no effect.
  */
 struct AgentConfig {
-    std::string name          = "CoreAgent";
+    std::string name          = "Cerberus";
     std::string system_prompt = "You are a fast, efficient AI agent. "
                                 "Use available tools to complete tasks concisely.";
     size_t      max_tokens    = 4096;  /* token budget for the context window */
@@ -85,4 +85,4 @@ private:
     void setupBuiltinTools();
 };
 
-} // namespace coreagent
+} // namespace cerberus

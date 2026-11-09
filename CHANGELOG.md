@@ -1,6 +1,6 @@
-# 📜 IronAgent Changelog & Release Notes
+# 📜 Cerberus Changelog & Release Notes
 
-All notable changes to the **IronAgent** framework are documented here.
+All notable changes to the **Cerberus** framework are documented here.
 
 ## 🚀 [v1.4.0] - 2026-07-31 (Latest Build)
 
@@ -9,7 +9,7 @@ All notable changes to the **IronAgent** framework are documented here.
 Version **v1.4.0** introduces **Zero-Copy Paged KV-Cache Arenas** and **SQ8 Quantized SIMD Vector Memory with HNSW Graph Indexing**.
 
 #### 1. 🧠 Zero-Copy Paged KV-Cache Arenas (`KVCacheArena`)
-- **Page-Aligned Memory Backing:** 4KB / 64KB page-aligned allocations using `mmap` and POSIX shared memory (`shm_open`) for zero-copy attention KV-cache sharing between local LLM runtimes (`llama.cpp`, `vLLM`) and IronAgent processes.
+- **Page-Aligned Memory Backing:** 4KB / 64KB page-aligned allocations using `mmap` and POSIX shared memory (`shm_open`) for zero-copy attention KV-cache sharing between local LLM runtimes (`llama.cpp`, `vLLM`) and Cerberus processes.
 - **Prefix Hash Table:** 64-bit FNV-1a token hash lookup for instant prompt prefix cache hits (0-ms prefix caching).
 - **Reference Counting & Pinning:** Thread-safe lock-free page reference counting to safely share KV blocks across concurrent worker agents.
 
@@ -23,7 +23,7 @@ Version **v1.4.0** introduces **Zero-Copy Paged KV-Cache Arenas** and **SQ8 Quan
 
 ### 🌟 Major Highlights & System Architecture Expansion
 
-Version **v1.3.0** introduces three core pillars designed to make IronAgent a production-grade, highly autonomous agent framework: **Hierarchical C++ Swarm Orchestration**, **Embedded SIMD Vector Memory**, and **Lockless Event Ring Telemetry**.
+Version **v1.3.0** introduces three core pillars designed to make Cerberus a production-grade, highly autonomous agent framework: **Hierarchical C++ Swarm Orchestration**, **Embedded SIMD Vector Memory**, and **Lockless Event Ring Telemetry**.
 
 #### 1. 🐝 Hierarchical C++ Swarm Orchestrator (`SwarmOrchestrator`)
 - **Async Fan-Out / Fan-In:** Parallel worker delegation executed directly on the C core thread pool (`ca_thread_pool_t`) using `std::packaged_task` and `std::future`.
@@ -44,7 +44,7 @@ Version **v1.3.0** introduces three core pillars designed to make IronAgent a pr
 
 ### 🌟 Major Highlights & Architecture Overhaul
 
-Version **v1.2.0** shifts IronAgent from basic context management to **dynamic capability expansion**, enabling microsecond AST output parsing, live MCP tool hot-swapping, and parallel multi-agent shared memory without Python GIL contention.
+Version **v1.2.0** shifts Cerberus from basic context management to **dynamic capability expansion**, enabling microsecond AST output parsing, live MCP tool hot-swapping, and parallel multi-agent shared memory without Python GIL contention.
 
 #### 1. ⚡ C++ AST Output Parser (`OutputParser`)
 - **Native Parsing in `Agent::reflect()`:** Output classification and token extraction for JSON objects, JSON arrays, scalars, and POSIX ERE regex patterns are now executed directly inside C++.
@@ -81,5 +81,5 @@ Version **v1.2.0** shifts IronAgent from basic context management to **dynamic c
 ### Initial Release
 - Core C11 bare-metal memory arena (`ca_arena_t`).
 - Basic C++ reasoning engine (`Think ➔ Plan ➔ Act ➔ Reflect`).
-- Pybind11 module bindings (`_coreagent_cpp`).
+- Pybind11 module bindings (`_cerberus_core`).
 - Basic Python wrapper API (`coreagent`).

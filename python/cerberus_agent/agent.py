@@ -11,14 +11,14 @@ if TYPE_CHECKING:
     from .mcp_client import MCPToolBridge
     from .shared_memory import SharedMemory
 
-from ._coreagent_cpp import (
+from ._cerberus_core import (
     Agent        as _CppAgent,
     AgentConfig,
     AgentState,
     ToolInput,
     ToolOutput,
 )
-from . import _coreagent_cpp as cpp
+from . import _cerberus_core as cpp
 from .tools import (
     shell_tool,
     read_file_tool,
@@ -37,7 +37,7 @@ class AgentMessage:
 
 class Agent:
     """
-    CoreAgent — High-level Python interface to the C++ Agent engine.
+    Cerberus — High-level Python interface to the C++ Agent engine.
 
     Example:
         agent = Agent(name="MyBot")
@@ -256,7 +256,7 @@ class Agent:
 
     def connect_filesystem_mcp(self, root_dir: Optional[str] = None) -> "Agent":
         """
-        Convenience: connect to CoreAgent's own pure-Python filesystem
+        Convenience: connect to Cerberus's own pure-Python filesystem
         MCP server (mcp_filesystem_server.py), scoped to root_dir.
         """
         from .mcp_client import MCPToolBridge
@@ -268,7 +268,7 @@ class Agent:
         return self.add_mcp_server(bridge, prefix="mcp_")
 
     def _register_mcp_tool(self, bridge: MCPToolBridge, spec: Dict[str, Any], prefix: str):
-        """Wrap one MCP tool as a CoreAgent tool (ToolInput -> ToolOutput)."""
+        """Wrap one MCP tool as a Cerberus tool (ToolInput -> ToolOutput)."""
         mcp_name = spec["name"]
         full_name = f"{prefix}{mcp_name}"
         schema = spec.get("input_schema") or {}
@@ -364,7 +364,7 @@ class Agent:
         return list(self._agent.tools().tool_names())
 
     def __repr__(self) -> str:
-        return (f"<CoreAgent name='{self.name}' "
+        return (f"<Cerberus name='{self.name}' "
                 f"state={self.state_name} "
                 f"tools={len(self.tool_names)}>")
 

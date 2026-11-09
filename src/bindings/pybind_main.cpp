@@ -17,9 +17,9 @@
 #include "SwarmOrchestrator.hpp"
 
 namespace py = pybind11;
-using namespace coreagent;
+using namespace cerberus;
 
-PYBIND11_MODULE(_coreagent_cpp, m) {
+PYBIND11_MODULE(_cerberus_core, m) {
     /* ── State & Role Enums ──────────────────────────────────────────────── */
     py::enum_<AgentState>(m, "AgentState")
         .value("IDLE",       AgentState::IDLE)
@@ -190,7 +190,7 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .def("ref_count", [](const PageBlock& pb) { return pb.ref_count.load(); });
 
     py::class_<KVCacheArena>(m, "KVCacheArena")
-        .def(py::init<size_t, std::string>(), py::arg("capacity_pages") = 1024, py::arg("shm_prefix") = "/ironagent_kv_")
+        .def(py::init<size_t, std::string>(), py::arg("capacity_pages") = 1024, py::arg("shm_prefix") = "/cerberus_kv_")
         .def("allocate_block", &KVCacheArena::allocateBlock, py::arg("token_prefix"), py::arg("min_bytes"))
         .def("lookup_prefix",  &KVCacheArena::lookupPrefix,  py::arg("token_prefix"))
         .def("release_block",  &KVCacheArena::releaseBlock,  py::arg("block_id"))
@@ -292,7 +292,7 @@ PYBIND11_MODULE(_coreagent_cpp, m) {
         .def("context", [](Agent& a) -> ContextBuffer& { return a.context(); }, py::return_value_policy::reference_internal)
         .def("tools",   [](Agent& a) -> DynamicToolRegistry& { return a.tools(); }, py::return_value_policy::reference_internal)
         .def("__repr__", [](const Agent& a) {
-            return "<CoreAgent name='" + a.name() + "' state=" + a.stateName() + ">";
+            return "<Cerberus name='" + a.name() + "' state=" + a.stateName() + ">";
         });
 
     m.def("version", []() { return "1.4.0"; });

@@ -1,5 +1,5 @@
 """
-Built-in Python-side tools for CoreAgent.
+Built-in Python-side tools for Cerberus.
 """
 
 import subprocess
@@ -9,7 +9,7 @@ import urllib.error
 from typing import Optional
 
 try:
-    from ._coreagent_cpp import ToolInput, ToolOutput
+    from ._cerberus_core import ToolInput, ToolOutput
 except ImportError:
     class ToolInput:
         name: str

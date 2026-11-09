@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <cstdint>  
 
-namespace coreagent {
+namespace cerberus {
 
 /* All data a tool receives from the agent planner. */
 struct ToolInput {
@@ -94,4 +94,4 @@ private:
     std::vector<std::string>                 names_;
 };
 
-} // namespace coreagent
+} // namespace cerberus

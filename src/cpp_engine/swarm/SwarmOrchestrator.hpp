@@ -63,7 +63,7 @@ extern "C" {
     #include "thread_pool.h"
 }
 
-namespace coreagent {
+namespace cerberus {
 
 /* ── Per-worker result ──────────────────────────────────────────────────── */
 struct SwarmResult {
@@ -274,4 +274,4 @@ private:
     }
 };
 
-} // namespace coreagent
+} // namespace cerberus

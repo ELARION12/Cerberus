@@ -1,4 +1,4 @@
-# ⚡ IronAgent Technical Manual & Architectural Blueprint
+# ⚡ Cerberus Technical Manual & Architectural Blueprint
 
 > **High-Performance Bare-Metal AI Agent Engine (C11 / C++17 / Pybind11 / Python)**  
 > **Document Version:** 1.4.0 | **Status:** Active Release
@@ -7,11 +7,11 @@
 
 ## 📌 Executive Summary & Core Philosophy
 
-**IronAgent** is an ultra-low latency, production-grade AI agent runtime engineered from first principles in compiled **C11 and C++17**.
+**Cerberus** is an ultra-low latency, production-grade AI agent runtime engineered from first principles in compiled **C11 and C++17**.
 
 Traditional Python-only agent frameworks (LangChain, AutoGen, CrewAI) suffer from heavy RAM bloat (300 MB – 800 MB+ RSS per agent), high garbage collection pauses, and Global Interpreter Lock (GIL) contention during multi-agent scaling. 
 
-IronAgent solves this bottleneck by shifting the core agent state machine (`Think ➔ Plan ➔ Act ➔ Reflect`), prompt serialization, memory arena management, and vector similarity search into a **bare-metal C/C++ engine**. 
+Cerberus solves this bottleneck by shifting the core agent state machine (`Think ➔ Plan ➔ Act ➔ Reflect`), prompt serialization, memory arena management, and vector similarity search into a **bare-metal C/C++ engine**. 
 
 ### Key System Metrics
 * **State Iteration Speed:** **270,000+ state iterations/second**
@@ -26,9 +26,9 @@ IronAgent solves this bottleneck by shifting the core agent state machine (`Thin
 ```mermaid
 graph TD
     subgraph Layer3["🐍 Layer 3: Python API & Custom Prompt Engine"]
-        API["Python Wrapper (coreagent.Agent)"]
+        API["Python Wrapper (cerberus_agent.Agent)"]
         Runner["Custom Prompt Runner (run_prompt.py)"]
-        Pybind["Pybind11 C++ Bridge (_coreagent_cpp)"]
+        Pybind["Pybind11 C++ Bridge (_cerberus_core)"]
     end
 
     subgraph Layer2["⚡ Layer 2: C++17 Reasoning & Memory Engine"]
@@ -85,7 +85,7 @@ struct PageBlock {
     size_t                page_count;   /* Number of 4KB pages allocated */
     size_t                size_bytes;   /* page_count * 4096 */
     uint8_t*              data_ptr;     /* mmap shared memory pointer */
-    std::string           shm_name;     /* POSIX shm name (e.g. "/ironagent_kv_1") */
+    std::string           shm_name;     /* POSIX shm name (e.g. "/cerberus_kv_1") */
     uint64_t              prefix_hash;  /* 64-bit FNV-1a token hash */
     std::atomic<uint32_t> ref_count{1}; /* Atomic reference count */
 };
@@ -151,7 +151,7 @@ graph LR
 
 ## 💡 Operational Modes: With LLM vs. Without LLM
 
-| Dimension | ⚡ IronAgent WITHOUT LLM | 🧠 IronAgent WITH LLM |
+| Dimension | ⚡ Cerberus WITHOUT LLM | 🧠 Cerberus WITH LLM |
 | :--- | :--- | :--- |
 | **Brain / Planner** | **C++ Pattern & Regex Classifier** (`OutputParser`) | **Local / Cloud LLM** (Ollama, Qwen, Llama 3) |
 | **Step Speed** | **$< 0.01\text{ ms}$ (270,000+ iter/sec)** | **~15 – 50 ms / step** |
@@ -164,10 +164,10 @@ graph LR
 
 ### 1. `KVCacheArena` API
 ```python
-from coreagent import KVCacheArena
+from cerberus_agent import KVCacheArena
 
 # Initialize page arena with 1024 pages (4MB)
-kv = KVCacheArena(capacity_pages=1024, shm_prefix="/ironagent_kv_")
+kv = KVCacheArena(capacity_pages=1024, shm_prefix="/cerberus_kv_")
 
 # Allocate or lookup paged KV memory block
 block = kv.allocate_block(token_prefix="<system>Prompt</system>", min_bytes=4096)
@@ -179,7 +179,7 @@ kv.release_block(block.block_id)
 
 ### 2. `VectorBuffer` with SQ8 & HNSW API
 ```python
-from coreagent import VectorBuffer
+from cerberus_agent import VectorBuffer
 
 vb = VectorBuffer(dim=512)
 vb.enable_sq8(True)                          # Enable 4x SQ8 compression
@@ -211,4 +211,4 @@ matches = vb.query(embedding=[0.1]*512, top_k=5)
 
 ## 📄 License
 
-IronAgent is released under the **MIT License**.
+Cerberus is released under the **MIT License**.

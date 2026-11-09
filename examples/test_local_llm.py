@@ -9,8 +9,8 @@ import os
 # Add python directory to module path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../python"))
 
-from cerberus import Agent
-from cerberus.llm import OllamaClient
+from cerberus_agent import Agent
+from cerberus_agent.llm import OllamaClient
 
 def main():
     print("🐕 Initializing Cerberus AI connected to Local Ollama...")

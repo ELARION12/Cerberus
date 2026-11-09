@@ -5,7 +5,7 @@ Backed by C++ native arena + pthread_rwlock for zero-FFI-overhead reads.
 
 from typing import Any, Dict, List, Optional
 try:
-    from ._coreagent_cpp import SharedMemory as _CppSharedMemory
+    from ._cerberus_core import SharedMemory as _CppSharedMemory
 except ImportError:
     _CppSharedMemory = None
 

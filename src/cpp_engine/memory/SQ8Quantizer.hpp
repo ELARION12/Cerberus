@@ -24,7 +24,7 @@
 #  define CA_SIMD_NEON 1
 #endif
 
-namespace coreagent {
+namespace cerberus {
 
 struct SQ8Vector {
     std::vector<uint8_t> codes;
@@ -148,4 +148,4 @@ public:
     }
 };
 
-} // namespace coreagent
+} // namespace cerberus

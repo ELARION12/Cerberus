@@ -31,7 +31,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-namespace coreagent {
+namespace cerberus {
 
 constexpr size_t CA_PAGE_SIZE = 4096; // Standard 4KB memory page
 
@@ -54,9 +54,9 @@ class KVCacheArena {
 public:
     /*
      * capacity_pages — Maximum number of 4KB pages to reserve for the arena pool
-     * shm_prefix     — POSIX shared memory object prefix (e.g. "/ironagent_kv_")
+     * shm_prefix     — POSIX shared memory object prefix (e.g. "/cerberus_kv_")
      */
-    explicit KVCacheArena(size_t capacity_pages = 1024, std::string shm_prefix = "/ironagent_kv_")
+    explicit KVCacheArena(size_t capacity_pages = 1024, std::string shm_prefix = "/cerberus_kv_")
         : capacity_pages_(capacity_pages), shm_prefix_(std::move(shm_prefix)), next_block_id_(1)
     {
         total_capacity_bytes_ = capacity_pages_ * CA_PAGE_SIZE;
@@ -216,4 +216,4 @@ private:
     std::unordered_map<uint64_t, std::weak_ptr<PageBlock>>   hash_table_;
 };
 
-} // namespace coreagent
+} // namespace cerberus

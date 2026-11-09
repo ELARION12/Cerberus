@@ -10,7 +10,7 @@ extern "C" {
     #include "shared_memory.h"
 }
 
-namespace coreagent {
+namespace cerberus {
 
 class SharedMemory {
 public:
@@ -60,4 +60,4 @@ private:
     ca_shm_t* shm_;
 };
 
-} // namespace coreagent
+} // namespace cerberus

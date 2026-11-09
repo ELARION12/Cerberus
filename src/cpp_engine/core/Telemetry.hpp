@@ -22,7 +22,7 @@
 
 #include "ringbuf.h"
 
-namespace coreagent {
+namespace cerberus {
 
 /* ── RAII guard for a timed span ─────────────────────────────────────────── */
 class TelemetrySpan {
@@ -122,4 +122,4 @@ private:
     ca_ringbuf_t* ring_;
 };
 
-} // namespace coreagent
+} // namespace cerberus

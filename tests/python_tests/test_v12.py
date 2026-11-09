@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(
     os.path.dirname(__file__), "../../python"
 ))
 
-from cerberus import (
+from cerberus_agent import (
     Agent, SharedMemory, DynamicToolRegistry,
     OutputParser, ParsedKind, ToolInput, ToolOutput
 )

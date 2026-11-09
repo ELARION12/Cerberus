@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <functional>
 
-namespace coreagent {
+namespace cerberus {
 
 struct MCPToolSchema {
     std::string name;
@@ -37,4 +37,4 @@ private:
     std::unordered_map<std::string, std::vector<MCPToolSchema>> mcp_schemas_;
 };
 
-} // namespace coreagent
+} // namespace cerberus

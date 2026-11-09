@@ -4,7 +4,7 @@
 #include <cctype>
 #include <regex.h>   /* POSIX ERE — no external dependencies */
 
-namespace coreagent {
+namespace cerberus {
 
 std::string_view OutputParser::arenaStr(ca_arena_t* arena, std::string_view sv) {
     if (sv.empty()) return {};
@@ -170,4 +170,4 @@ const char* OutputParser::kindName(ParsedKind kind) {
     return "UNKNOWN";
 }
 
-} // namespace coreagent
+} // namespace cerberus

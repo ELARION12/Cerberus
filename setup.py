@@ -2,9 +2,9 @@ from setuptools import setup, find_packages
 import os
 
 setup(
-    name             = "cerberus",
+    name             = "cerberus-agent",
     version          = "1.4.0",
-    author           = "Cerberus Contributors",
+    author           = "Arun Kumar",
     description      = "Cerberus AI — Bare-Metal Agent Engine (C11 + C++17 + Python3)",
     long_description = open("README.md").read() if os.path.exists("README.md") else "",
     packages         = find_packages(where="python"),
@@ -18,7 +18,7 @@ setup(
     },
     entry_points = {
         "console_scripts": [
-            "cerberus=cerberus.cli:main",
+            "cerberus=cerberus_agent.cli:main",
         ],
     },
     classifiers = [
