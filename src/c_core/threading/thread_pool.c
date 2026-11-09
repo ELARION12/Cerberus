@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "ca_log.h"
 #include <stdint.h>
 
 
@@ -90,7 +91,7 @@ ca_thread_pool_t* ca_pool_create(uint32_t num_threads) {
     pthread_cond_init (&pool->task_available, NULL);
     pthread_cond_init (&pool->all_done,       NULL);
 
-    printf("[Cerberus] Thread pool initialized (lazy loading active)\n");
+    CA_LOG("[Cerberus] Thread pool initialized (lazy loading active)\n");
     return pool;
 }
 

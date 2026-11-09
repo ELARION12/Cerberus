@@ -56,6 +56,7 @@
 #include <stdexcept>
 #include <chrono>
 #include <cstdio>
+#include "ca_log.h"
 #include <cstring>
 
 #include "ringbuf.h"
@@ -188,7 +189,7 @@ public:
                          name_.c_str(), worker_name.c_str());
         }
 
-        printf("[%s ⚡] Spawned worker: %s\n", name_.c_str(), worker_name.c_str());
+        CA_LOG("[%s ⚡] Spawned worker: %s\n", name_.c_str(), worker_name.c_str());
         return *this;
     }
 
@@ -229,7 +230,7 @@ public:
 
             if (res.success) {
                 summary.succeeded++;
-                printf("[%s ✅] Worker '%s' done in %llums\n",
+                CA_LOG("[%s ✅] Worker '%s' done in %llums\n",
                        name_.c_str(), res.worker_name.c_str(),
                        (unsigned long long)res.elapsed_ms);
             } else {
@@ -249,7 +250,7 @@ public:
 
         slots_.clear();
 
-        printf("[%s] 🏁 Swarm complete: %u succeeded, %u failed, total=%llums\n",
+        CA_LOG("[%s] 🏁 Swarm complete: %u succeeded, %u failed, total=%llums\n",
                name_.c_str(), summary.succeeded, summary.failed,
                (unsigned long long)summary.total_elapsed_ms);
 

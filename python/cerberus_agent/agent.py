@@ -19,6 +19,7 @@ from ._cerberus_core import (
     ToolOutput,
 )
 from . import _cerberus_core as cpp
+from ._log import log, set_verbose
 from .tools import (
     shell_tool,
     read_file_tool,
@@ -220,17 +221,17 @@ class Agent:
 
         assignments = self.llm.delegate(task, self.worker_roles)
         if not assignments:
-            print(f"[{self.name}] delegation produced no valid assignments, running task directly instead")
+            log(f"[{self.name}] delegation produced no valid assignments, running task directly instead")
             return self.run_llm(task)
 
         results = []
         for a in assignments:
             worker = self.workers.get(a["worker"])
             if worker is None:
-                print(f"[{self.name}] skipping unknown worker '{a['worker']}'")
+                log(f"[{self.name}] skipping unknown worker '{a['worker']}'")
                 results.append(f"[skipped - unknown worker '{a['worker']}']")
                 continue
-            print(f"[{self.name} -> {worker.name}] {a['subtask']}")
+            log(f"[{self.name} -> {worker.name}] {a['subtask']}")
             self.send_message(worker, a["subtask"])
             worker_result = worker.run_llm(a["subtask"])
             results.append(f"{worker.name}: {worker_result}")
@@ -406,7 +407,7 @@ class Agent:
                 tool_specs=active_specs,
                 context=prompt,
             )
-            print(f"[llm-plan step {step}] {plan_str}")
+            log(f"[llm-plan step {step}] {plan_str}")
 
             sep = plan_str.find("|")
             tool_name = plan_str[:sep] if sep != -1 else plan_str

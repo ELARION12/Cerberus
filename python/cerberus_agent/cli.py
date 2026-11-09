@@ -9,12 +9,13 @@ Usage:
 import argparse
 import sys
 from .agent import Agent
+from ._log import set_verbose
 
 
 def main():
     parser = argparse.ArgumentParser(
         prog="cerberus",
-        description="Cerberus — Bare-Metal AI Agent Runtime"
+        description="Cerberus agent runtime"
     )
     parser.add_argument(
         "task",
@@ -39,6 +40,10 @@ def main():
         help="List all available tools and exit"
     )
     parser.add_argument(
+        "--quiet", action="store_true",
+        help="Do not print the agent's progress, only the result"
+    )
+    parser.add_argument(
         "--version", action="store_true",
         help="Print version and exit"
     )
@@ -50,6 +55,8 @@ def main():
         print(f"Cerberus v{__version__}")
         sys.exit(0)
 
+    set_verbose(not args.quiet and not args.list_tools)
+
     agent = Agent(
         name=args.name,
         max_steps=args.steps,
@@ -59,7 +66,7 @@ def main():
     if args.list_tools:
         print(f"\n[{agent.name}] Available tools:")
         for t in agent.tool_names:
-            print(f"  • {t}")
+            print(f"  - {t}")
         print()
         sys.exit(0)
 
@@ -72,13 +79,13 @@ def main():
                     break
                 if task:
                     result = agent.run(task)
-                    print(f"\n📄 Result:\n{result}\n")
+                    print(f"\nResult:\n{result}\n")
             except KeyboardInterrupt:
-                print("\nBye! 👋")
+                print("\nBye")
                 break
     else:
         result = agent.run(args.task)
-        print(f"\n📄 Final Result:\n{result}")
+        print(f"\nResult:\n{result}")
 
 
 if __name__ == "__main__":

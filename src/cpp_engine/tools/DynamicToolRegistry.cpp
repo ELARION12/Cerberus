@@ -1,6 +1,7 @@
 #include "DynamicToolRegistry.hpp"
 
 #include <cstdio>
+#include "ca_log.h"
 
 namespace cerberus {
 
@@ -11,7 +12,7 @@ void DynamicToolRegistry::registerMCP(const MCPToolSchema& schema,
     registerTool(schema.name, schema.description, std::move(trampoline));
     mcp_schemas_[schema.server_id].push_back(schema);
 
-    printf("[DynamicToolRegistry] registered MCP tool '%s' from server '%s'\n",
+    CA_LOG("[DynamicToolRegistry] registered MCP tool '%s' from server '%s'\n",
            schema.name.c_str(), schema.server_id.c_str());
 }
 
@@ -23,12 +24,12 @@ void DynamicToolRegistry::teardownServer(const std::string& server_id) {
 
     for (const auto& schema : it->second) {
         removeTool(schema.name);
-        printf("[DynamicToolRegistry] removed tool '%s' (server '%s' disconnected)\n",
+        CA_LOG("[DynamicToolRegistry] removed tool '%s' (server '%s' disconnected)\n",
                schema.name.c_str(), server_id.c_str());
     }
     mcp_schemas_.erase(it);
 
-    printf("[DynamicToolRegistry] server '%s' torn down\n", server_id.c_str());
+    CA_LOG("[DynamicToolRegistry] server '%s' torn down\n", server_id.c_str());
 }
 
 void DynamicToolRegistry::refreshServer(
@@ -41,7 +42,7 @@ void DynamicToolRegistry::refreshServer(
         registerMCP(schema, trampoline_factory(schema));
     }
 
-    printf("[DynamicToolRegistry] server '%s' refreshed with %zu tools\n",
+    CA_LOG("[DynamicToolRegistry] server '%s' refreshed with %zu tools\n",
            server_id.c_str(), new_schemas.size());
 }
 

@@ -5,6 +5,7 @@ file(GLOB_RECURSE C_CORE_SOURCES
     "executor/*.c"
     "io/*.c"
     "telemetry/*.c"
+    "util/*.c"
 )
 
 # Build as static library
@@ -16,6 +17,7 @@ target_include_directories(cerberus_c PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/executor
     ${CMAKE_CURRENT_SOURCE_DIR}/io
     ${CMAKE_CURRENT_SOURCE_DIR}/telemetry
+    ${CMAKE_CURRENT_SOURCE_DIR}/util
 )
 
 target_link_libraries(cerberus_c PUBLIC Threads::Threads)

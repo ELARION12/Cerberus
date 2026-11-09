@@ -1,6 +1,7 @@
 #include "Agent.hpp"
 
 #include <cstdio>
+#include "ca_log.h"
 #include <cstring>
 #include <algorithm>
 #include <stdexcept>
@@ -18,14 +19,14 @@ Agent::Agent(const AgentConfig& config)
     context_.addSystem(config.system_prompt);
     setupBuiltinTools();
 
-    printf("\n[%s] ✅ Agent initialized\n",   config_.name.c_str());
-    printf("[%s]    Threads  : %u\n",         config_.name.c_str(), config_.num_threads);
-    printf("[%s]    MaxSteps : %u\n",         config_.name.c_str(), config_.max_steps);
-    printf("[%s]    MaxTokens: %zu\n\n",      config_.name.c_str(), config_.max_tokens);
+    CA_LOG("\n[%s] ✅ Agent initialized\n",   config_.name.c_str());
+    CA_LOG("[%s]    Threads  : %u\n",         config_.name.c_str(), config_.num_threads);
+    CA_LOG("[%s]    MaxSteps : %u\n",         config_.name.c_str(), config_.max_steps);
+    CA_LOG("[%s]    MaxTokens: %zu\n\n",      config_.name.c_str(), config_.max_tokens);
 }
 
 void Agent::setState(AgentState s) {
-    printf("[%s] %-12s → %s\n",
+    CA_LOG("[%s] %-12s → %s\n",
            config_.name.c_str(),
            agentStateToString(state_).c_str(),
            agentStateToString(s).c_str());
@@ -111,7 +112,7 @@ std::string Agent::think(const std::string& task) {
 
     context_.addAssistant(thought);
 
-    printf("[%s] 💭 Thought: %s\n\n",
+    CA_LOG("[%s] 💭 Thought: %s\n\n",
            config_.name.c_str(), thought.c_str());
 
     return thought;
@@ -147,7 +148,7 @@ std::string Agent::plan(const std::string& thought) {
         plan_str = "echo|" + thought;
     }
 
-    printf("[%s] 📋 Plan: %s\n\n",
+    CA_LOG("[%s] 📋 Plan: %s\n\n",
            config_.name.c_str(), plan_str.c_str());
 
     return plan_str;
@@ -166,7 +167,7 @@ ToolOutput Agent::act(const std::string& plan_str) {
 
     ToolInput input{tool_name, tool_args};
 
-    printf("[%s] 🔧 Calling tool: [%s] with args: [%s]\n",
+    CA_LOG("[%s] 🔧 Calling tool: [%s] with args: [%s]\n",
            config_.name.c_str(),
            tool_name.c_str(),
            tool_args.c_str());
@@ -187,10 +188,10 @@ bool Agent::reflect(const ToolOutput& result, std::string& final_output) {
         ParsedResult parsed = OutputParser::parse(parse_arena_.raw(), result.result);
         final_output = std::string(parsed.extracted);
 
-        printf("[%s] ✅ Tool succeeded in %ums (Format: %s)\n",
+        CA_LOG("[%s] ✅ Tool succeeded in %ums (Format: %s)\n",
                config_.name.c_str(), result.elapsed_ms,
                OutputParser::kindName(parsed.kind));
-        printf("[%s] 📄 Result (Extracted):\n%s\n",
+        CA_LOG("[%s] 📄 Result (Extracted):\n%s\n",
                config_.name.c_str(), final_output.c_str());
         return true;
     } else {
@@ -201,10 +202,10 @@ bool Agent::reflect(const ToolOutput& result, std::string& final_output) {
 }
 
 std::string Agent::run(const std::string& task) {
-    printf("\n╔══════════════════════════════════════════╗\n");
-    printf("║  [%s] Starting task                  \n", config_.name.c_str());
-    printf("║  Task: %-35s\n", task.c_str());
-    printf("╚══════════════════════════════════════════╝\n\n");
+    CA_LOG("\n╔══════════════════════════════════════════╗\n");
+    CA_LOG("║  [%s] Starting task                  \n", config_.name.c_str());
+    CA_LOG("║  Task: %-35s\n", task.c_str());
+    CA_LOG("╚══════════════════════════════════════════╝\n\n");
 
     setState(AgentState::IDLE);
 
@@ -213,7 +214,7 @@ std::string Agent::run(const std::string& task) {
 
     while (steps < config_.max_steps) {
         steps++;
-        printf("[%s] ── Step %u/%u ───────────────────────\n\n",
+        CA_LOG("[%s] ── Step %u/%u ───────────────────────\n\n",
                config_.name.c_str(), steps, config_.max_steps);
 
         std::string thought  = think(task);
@@ -232,11 +233,11 @@ std::string Agent::run(const std::string& task) {
         }
     }
 
-    context_.printSummary();
+    if (ca_log_enabled()) context_.printSummary();
 
-    printf("\n╔══════════════════════════════════════════╗\n");
-    printf("║  [%s] Task Complete ✅               \n", config_.name.c_str());
-    printf("╚══════════════════════════════════════════╝\n\n");
+    CA_LOG("\n╔══════════════════════════════════════════╗\n");
+    CA_LOG("║  [%s] Task Complete ✅               \n", config_.name.c_str());
+    CA_LOG("╚══════════════════════════════════════════╝\n\n");
 
     return final_output;
 }

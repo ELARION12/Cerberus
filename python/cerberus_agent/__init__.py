@@ -43,6 +43,7 @@ except ImportError as e:
     SwarmSummary = None
     simd_backend = None
 
+from ._log import set_verbose, verbose
 from .agent import Agent
 from .shared_memory import SharedMemory
 from .tools import (
@@ -84,4 +85,6 @@ __all__ = [
     "version",
     "state_name",
     "simd_backend",
+    "set_verbose",
+    "verbose",
 ]

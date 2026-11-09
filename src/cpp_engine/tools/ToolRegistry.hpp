@@ -6,6 +6,7 @@
 #include <vector>
 #include <stdexcept>
 #include <cstdio>
+#include "ca_log.h"
 #include <cstdint>  
 
 namespace cerberus {
@@ -48,7 +49,7 @@ public:
         tools_[name] = ToolDef{name, description, fn};
         names_.push_back(name);
 
-        printf("[ToolRegistry] Registered: %-18s → %s\n",
+        CA_LOG("[ToolRegistry] Registered: %-18s → %s\n",
                name.c_str(), description.c_str());
     }
 

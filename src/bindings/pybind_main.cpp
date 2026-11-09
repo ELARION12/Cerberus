@@ -17,6 +17,7 @@
 #include "SwarmOrchestrator.hpp"
 
 namespace py = pybind11;
+#include "ca_log.h"
 using namespace cerberus;
 
 PYBIND11_MODULE(_cerberus_core, m) {
@@ -298,5 +299,8 @@ PYBIND11_MODULE(_cerberus_core, m) {
     m.def("version", []() { return "1.4.0"; });
     m.def("simd_backend", []() { return std::string(simd::name(simd::active())); },
           "Vector kernel in use: 'avx2', 'neon' or 'scalar'");
+    m.def("set_verbose", [](bool on) { ca_set_log_enabled(on ? 1 : 0); },
+          py::arg("on") = true, "Print engine progress messages (off by default)");
+    m.def("verbose", []() { return ca_log_enabled() != 0; });
     m.def("state_name", [](AgentState s) { return agentStateToString(s); });
 }
