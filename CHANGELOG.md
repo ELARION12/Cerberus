@@ -15,6 +15,9 @@ All notable changes to the **Cerberus** framework are documented here.
 - Rewrote the README and `DOCUMENTATION.md`. Removed claims the code does not back up: the 4x memory saving from SQ8 (it uses about a quarter more), llama.cpp and vLLM cache sharing (there is no integration), and the 270,000 "agent iterations" figure (it measured context buffer appends).
 - Added `examples/quickstart.py`, an offline example with a scripted planner, and renamed `test_local_llm.py` to `ollama_agent.py`.
 - Removed `bench.gif`, which showed the old benchmark.
+- Fixed `run_llm()` handing the model the text `<memory at 0x...>` instead of the conversation, so tool errors, earlier results and shared team memory never reached it.
+- Fixed custom tools being listed to the model as "No description available." The description you pass to `add_tool` or `@agent.tool` is now what the model sees.
+- Added `benchmarks/agent_e2e.py`, which runs the same tasks with a real local model (Ollama) through `run_llm()` and through a minimal Python loop, with identical prompts.
 
 ---
 

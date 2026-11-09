@@ -104,6 +104,8 @@ AVX2 is about 4 times faster than the scalar path. A plain numpy matrix product 
 
 **Native code** (`bench_native`, build with `-DCERBERUS_BUILD_BENCHMARKS=ON`). One arena allocation takes about 2 ns, and adding a 100 character message to the context buffer about 75 ns.
 
+**Not measured yet:** end to end with a real model. `benchmarks/agent_e2e.py` runs the same tasks through `run_llm()` and through a minimal Python loop against an Ollama model, with identical prompts, and reports success rate, time and memory. Results will go here once it has run.
+
 I have not run these on a Raspberry Pi yet. The ARM64 build is compiled and tested in CI, and Pi numbers will be added here when I have them.
 
 ## How it is built
